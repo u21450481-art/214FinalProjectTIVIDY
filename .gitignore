@@ -1,0 +1,36 @@
+# Compiled Object files
+*.o
+*.obj
+
+# Executables and Libraries
+*.exe
+*.out
+*.app
+*.dll
+*.so
+*.a
+*.dylib
+
+# Build directories
+bin/
+build/
+obj/
+
+# Windows specific
+*:Zone.Identifier
+Thumbs.db
+desktop.ini
+
+# Mac specific (in case any teammates use macOS)
+.DS_Store
+
+# Generated documentation (e.g., from Doxygen)
+html/
+latex/
+
+# IDEs and Editors (Visual Studio, VS Code, CLion)
+.vscode/
+.vs/
+.idea/
+*.suo
+*.user
