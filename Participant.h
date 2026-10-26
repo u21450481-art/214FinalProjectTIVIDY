@@ -7,10 +7,11 @@ using namespace std;
 class Participant{
 
 public:
+    virtual ~Participant() {}
     virtual void Operation() = 0;
-    virtual void add(Participant* p) = 0;
-    virtual void remove(Participant* p) = 0;
-    virtual vector<Participant*> getChildren() = 0;
+    virtual void add(Participant* p) {};
+    virtual void remove(Participant* p) {};
+    virtual vector<Participant*> getChildren() {return {};};
 };
 
 #endif
