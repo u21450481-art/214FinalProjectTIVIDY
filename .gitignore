@@ -18,6 +18,7 @@ obj/
 
 # Windows specific
 *:Zone.Identifier
+*Zone.Identifier
 Thumbs.db
 desktop.ini
 
@@ -34,3 +35,7 @@ latex/
 .idea/
 *.suo
 *.user
+
+# Visual Paradigm Diagram Files
+*.lck
+*.bak*
