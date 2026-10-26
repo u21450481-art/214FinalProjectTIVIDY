@@ -1,32 +1,36 @@
-#ifndef WORKFLOW_COMPONENT
-#define WORKFLOW_COMPONENT
+#ifndef WORKFLOWCOMPONENT_H
+#define WORKFLOWCOMPONENT_H
 
-class WorkflowOrchestrator{};
+#include <memory>
+#include <vector>
 
-class Stage{};
+#include "WorkflowIterator.h"
+#include "Stage.h"
 
-class WorkflowIterator{};
+class WorkflowOrchestrator;
 
 class WorkflowComponent {
     WorkflowOrchestrator* mediator;
-    Stage state;
+    Stage*  state;
 
     public:
-    virtual void execute() = 0;
-    virtual void add(WorkflowComponent c)  = 0;
-    virtual void remove(WorkflowComponent c)  = 0;
-    virtual WorkflowComponent* getChild(int index)  = 0;
-    virtual Stage getState()  = 0;
-    virtual void setState(Stage s)  = 0;
-    virtual WorkflowIterator* createIterator()  = 0;
-    virtual void start()  = 0;
-    virtual void complete()  = 0;
-    virtual void fail()  = 0;
-    virtual void cancel()  = 0;
-    virtual void setMediator(WorkflowOrchestrator* mediator)  = 0;
-    virtual void clone()  = 0;
-    
+    WorkflowComponent();
+    virtual ~WorkflowComponent();
 
+    virtual void execute() = 0;
+    virtual void add(WorkflowComponent* c)  = 0;
+    virtual void remove(WorkflowComponent* c)  = 0;
+    virtual vector<WorkflowComponent*> getChildren()  = 0;
+    
+    Stage*  getState();
+    void setState(Stage* s);
+    WorkflowIterator* createIterator();
+    void start();
+    void complete();
+    void fail();
+    void cancel();
+    void setMediator(WorkflowOrchestrator* mediator);
+    
 };
 
 

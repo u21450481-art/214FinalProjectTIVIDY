@@ -1,7 +1,18 @@
 #include "WorkflowComponent.h"
+#include "DepthFirstIterator.h"
+#include "ConcreteStages.h"
+
+
+WorkflowComponent::WorkflowComponent() :
+   mediator(nullptr), state(new NotStarted()) {}
+
+WorkflowComponent::~WorkflowComponent() { 
+    delete state; 
+}
 
 void WorkflowComponent::setState(Stage* s){
-    state = s;
+    delete state; 
+    state = s; 
 }
 
 Stage* WorkflowComponent::getState(){
@@ -28,10 +39,11 @@ void WorkflowComponent::cancel(){
     state->cancel(this);
 }
 
-
-WorkflowComponent* WorkflowComponent::clone(){
-    
+WorkflowIterator* WorkflowComponent::createIterator(){
+    return new depthFirstIterator(this);
 }
+
+
 
 
 
