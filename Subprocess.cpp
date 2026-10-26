@@ -1,11 +1,9 @@
 #include "Subprocess.h"
 #include <algorithm>
 
-Subprocess::Subprocess(WorkflowComponent* c){
-    children = {c}; 
-}
+Subprocess::Subprocess(){}
 
-Subprocess::~Subprocess() { 
+Subprocess::~Subprocess(){ 
     for (auto* c : children) delete c;
 }
 

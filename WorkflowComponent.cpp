@@ -7,7 +7,7 @@ WorkflowComponent::WorkflowComponent() :
    mediator(nullptr), state(new NotStarted()) {}
 
 WorkflowComponent::~WorkflowComponent() { 
-    delete state; 
+    delete state;
 }
 
 void WorkflowComponent::setState(Stage* s){
@@ -24,7 +24,7 @@ void WorkflowComponent::setMediator(WorkflowOrchestrator* m){
 }
 
 void WorkflowComponent::start(){
-    state->start(this);
+   state->handleExecute(this);
 }
 
 void WorkflowComponent::complete(){
@@ -42,8 +42,3 @@ void WorkflowComponent::cancel(){
 WorkflowIterator* WorkflowComponent::createIterator(){
     return new depthFirstIterator(this);
 }
-
-
-
-
-

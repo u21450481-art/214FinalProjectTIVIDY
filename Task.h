@@ -15,12 +15,10 @@ class Task: public WorkflowComponent{
 
     public:
     Task(int priority, std::string deadline, std::string name);
+    ~Task();
+    std::string getName();
     void execute();
     void setAssignee(Participant* p);
-    void add(WorkflowComponent* p){};
-    void remove(WorkflowComponent* p){};
-    vector<WorkflowComponent*> getChildren();
-
 };
 
 #endif

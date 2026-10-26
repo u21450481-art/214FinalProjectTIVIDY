@@ -7,6 +7,8 @@
 #include "WorkflowIterator.h"
 #include "Stage.h"
 
+using namespace std;
+
 class WorkflowOrchestrator;
 
 class WorkflowComponent {
@@ -18,9 +20,9 @@ class WorkflowComponent {
     virtual ~WorkflowComponent();
 
     virtual void execute() = 0;
-    virtual void add(WorkflowComponent* c)  = 0;
-    virtual void remove(WorkflowComponent* c)  = 0;
-    virtual vector<WorkflowComponent*> getChildren()  = 0;
+    virtual void add(WorkflowComponent* c)  {};
+    virtual void remove(WorkflowComponent* c)  {};
+    virtual vector<WorkflowComponent*> getChildren() {return {};};
     
     Stage*  getState();
     void setState(Stage* s);

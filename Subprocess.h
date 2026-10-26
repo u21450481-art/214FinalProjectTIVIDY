@@ -13,12 +13,12 @@ class Subprocess: public WorkflowComponent {
     vector<WorkflowComponent*> children;
 
     public:
-    Subprocess(WorkflowComponent*);
+    Subprocess();
     ~Subprocess();
     void execute();
-    void add(WorkflowComponent* c);
-    void remove(WorkflowComponent* c);
-    vector<WorkflowComponent*> getChildren();
+    void add(WorkflowComponent* c) override;
+    void remove(WorkflowComponent* c) override;
+    vector<WorkflowComponent*> getChildren() override;
     bool allChildrenComplete();
     
 };
