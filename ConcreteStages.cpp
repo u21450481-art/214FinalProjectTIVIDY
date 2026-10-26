@@ -11,12 +11,12 @@ void NotStarted::handleExecute(WorkflowComponent* c){
 
 void NotStarted::start(WorkflowComponent* c){
     std::cout << "[Stage Transition] NotStarted -> InProgress\n";
-    //c->setState(new InProgress());
+    c->setState(new InProgress());
 }
 
 void NotStarted::cancel(WorkflowComponent* c){
     std::cout << "[Stage Transition] NotStarted -> Cancelled\n";
-    //c->setState(new Cancelled());
+    c->setState(new Cancelled());
 }
 
 //=================InProgress====================
@@ -26,17 +26,17 @@ void InProgress::handleExecute(WorkflowComponent* c){
 
 void InProgress::complete(WorkflowComponent* c){
     std::cout << "[Stage Transition] InProgress -> Complete\n";
-    //c->setState(new Complete());
+    c->setState(new Complete());
 }
 
 void InProgress::reject(WorkflowComponent* c){
     std::cout << "[Stage Transition] InProgress -> Rejected\n";
-    //c->setState(new Rejected());
+    c->setState(new Rejected());
 }
 
 void InProgress::cancel(WorkflowComponent* c){
     std::cout << "[Stage Transition] InProgress -> Cancelled\n";
-    //c->setState(new Cancelled());
+    c->setState(new Cancelled());
 }
 
 //=================Complete====================
