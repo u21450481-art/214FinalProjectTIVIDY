@@ -9,13 +9,14 @@ using namespace std;
 
 class depthFirstIterator: public WorkflowIterator{
     WorkflowComponent* root;
-    vector<WorkflowComponent*> list;
+    vector<WorkflowComponent*> pending;
 
 public:
     depthFirstIterator(WorkflowComponent*);
-    WorkflowComponent* first();
-    WorkflowComponent* next();
-    bool isDone();
-    WorkflowComponent* currentItem();
+    ~depthFirstIterator();
+    WorkflowComponent* first() override;
+    WorkflowComponent* next() override;
+    bool isDone()override;
+    WorkflowComponent* currentItem()override;
 };
 #endif

@@ -5,27 +5,29 @@ depthFirstIterator::depthFirstIterator(WorkflowComponent* c = nullptr)
     first();
 }
 
+depthFirstIterator::~depthFirstIterator(){}
+
 WorkflowComponent* depthFirstIterator::first(){
-   list.clear();
-    if (root) list.push_back(root);
+   pending.clear();
+    if (root) pending.push_back(root);
     return currentItem();
 }
 
 WorkflowComponent* depthFirstIterator::next(){
-    if (list.empty()) return nullptr;
-   vector< WorkflowComponent*> c = list.front()->getChildren();
-   list.pop_back();
+    if (pending.empty()) return nullptr;
+   vector< WorkflowComponent*> c = pending.back()->getChildren();
+   pending.pop_back();
     for(auto i = c.rbegin(); i!=c.rend(); i++){
-        list.push_back(*i);
+        pending.push_back(*i);
     }
 return currentItem();
 }
 
 bool depthFirstIterator::isDone(){
-    return list.empty();
+    return pending.empty();
 }
 
 WorkflowComponent* depthFirstIterator::currentItem(){
-    return  list.empty() ? nullptr : list.back();
+    return  pending.empty() ? nullptr : pending.back();
 }
 
