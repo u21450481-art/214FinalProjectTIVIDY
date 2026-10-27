@@ -1,6 +1,6 @@
 #include "LegacyHrSystem.h"
 
-//the "database" of the stub: three employees, each [username, full name, status code]
+//returns the HR row for a row number as a list of positions (username, full name, status code), or an empty list if there is no such row
 std::vector<std::string> LegacyHrSystem::getRow(int rowNumber) const{
     const char* rows[3][3] = {
         {"jsmith",  "John Smith",   "3"},
@@ -10,7 +10,7 @@ std::vector<std::string> LegacyHrSystem::getRow(int rowNumber) const{
 
     std::vector<std::string> row;
     if(rowNumber < 1 || rowNumber > 3){
-        return row; //no such row, so return it empty
+        return row;
     }
 
     for(int i = 0; i < 3; i++){

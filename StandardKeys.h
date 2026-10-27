@@ -3,11 +3,7 @@
 
 #include <string>
 
-/**
- * The standard vocabulary every adapter writes into a DataPayload.
- * Workflows and the engine read ONLY these keys and values, never the
- * field names or codes of an external system.
- */
+//the standard keys and status values every adapter writes into the data
 namespace StandardKeys{
     //keys
     const std::string NAME = "name"; //the person the record is about

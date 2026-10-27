@@ -3,7 +3,7 @@
 
 #include <string>
 
-/** A claim exactly as the (stub) insurance system stores it. */
+//a claim exactly as the stub insurance system stores it
 struct Claim{
     bool found; //false if the claim reference does not exist
     std::string fullName;
@@ -11,13 +11,9 @@ struct Claim{
     int amount; //claimed amount in rands
 };
 
-/**
- * STUB external insurance system. It returns a record with named fields,
- * which looks nothing like the legacy HR rows.
- */
+//stub external insurance system that returns named fields
 class ClaimsSystem{
     public:
-        /** Returns the claim for this reference (e.g. "C-102"). found is false if there is none. */
         Claim fetchClaim(const std::string& ref) const;
 };
 

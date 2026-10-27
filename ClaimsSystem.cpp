@@ -1,6 +1,6 @@
 #include "ClaimsSystem.h"
 
-//the "database" of the stub: three claims
+//returns the claim for a reference such as C-102. found is false if there is no such claim
 Claim ClaimsSystem::fetchClaim(const std::string& ref) const{
     const char* refs[3] = {"C-102", "C-103", "C-104"};
     const char* names[3] = {"Naledi Khumalo", "Sipho Dlamini", "Aisha Patel"};

@@ -1,4 +1,4 @@
 #include "DataAdapter.h"
 
-//nothing to clean up, derived classes clean up their own data
+//cleans up an adapter (the real adapters have nothing extra to clean up)
 DataAdapter::~DataAdapter(){}

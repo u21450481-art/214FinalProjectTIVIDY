@@ -6,10 +6,7 @@
 #include "DataAdapter.h"
 #include "ReturnsSystem.h"
 
-/**
- * Adapter for the retail returns system (used by product return workflows).
- * Splits the one-line answer into its parts and turns them into standard keys.
- */
+//adapter for the retail returns system
 class ReturnsDataAdapter: public DataAdapter{
     private:
         ReturnsSystem system; //the adaptee, owned by value
@@ -23,7 +20,6 @@ class ReturnsDataAdapter: public DataAdapter{
     public:
         ReturnsDataAdapter();
 
-        /** id is the return code, e.g. "R-100". Fills name, status, amount and source. */
         bool adapt(const std::string& id, DataPayload& out);
 };
 

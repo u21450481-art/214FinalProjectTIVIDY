@@ -5,10 +5,7 @@
 #include "DataAdapter.h"
 #include "LegacyHrSystem.h"
 
-/**
- * Adapter for the legacy HR system (used by employee onboarding).
- * Reads a positional row and turns it into the standard keys.
- */
+//adapter for the legacy HR system
 class HrDataAdapter: public DataAdapter{
     private:
         LegacyHrSystem system; //the adaptee, owned by value
@@ -22,7 +19,6 @@ class HrDataAdapter: public DataAdapter{
     public:
         HrDataAdapter();
 
-        /** id is the HR row number as text, e.g. "1". Fills name, status and source. */
         bool adapt(const std::string& id, DataPayload& out);
 };
 

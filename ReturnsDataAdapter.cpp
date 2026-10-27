@@ -3,17 +3,16 @@
 #include "DataPayload.h"
 #include "StandardKeys.h"
 
+//sets up the returns adapter
 ReturnsDataAdapter::ReturnsDataAdapter(){}
 
-//ask for the line, split it, then translate the parts.
-//no such return or a malformed line: false and out is not touched.
+//loads a return record and writes it into the data with the standard keys. Returns false and changes nothing if the return does not exist
 bool ReturnsDataAdapter::adapt(const std::string& id, DataPayload& out){
     std::string line = system.lookup(id);
     if(line.empty()){
         return false;
     }
 
-    //the line is "customer|item|refund amount|state code"
     std::vector<std::string> parts = split(line);
     if(parts.size() < 4){
         return false;
@@ -26,7 +25,7 @@ bool ReturnsDataAdapter::adapt(const std::string& id, DataPayload& out){
     return true;
 }
 
-//a small lookup table: position i in codes matches position i in texts
+//turns a returns state code (0, 1, 2) into a standard status
 std::string ReturnsDataAdapter::translateStatus(const std::string& code) const{
     const std::string codes[3] = {"0", "1", "2"};
     const std::string texts[3] = {StandardKeys::STATUS_PENDING, StandardKeys::STATUS_APPROVED, StandardKeys::STATUS_REJECTED};
@@ -39,7 +38,7 @@ std::string ReturnsDataAdapter::translateStatus(const std::string& code) const{
     return StandardKeys::STATUS_UNKNOWN;
 }
 
-//walks through the text and starts a new part at every '|'
+//cuts a line like a|b|c into a list of its parts
 std::vector<std::string> ReturnsDataAdapter::split(const std::string& line) const{
     std::vector<std::string> parts;
     std::string current = "";
@@ -52,6 +51,6 @@ std::vector<std::string> ReturnsDataAdapter::split(const std::string& line) cons
             current += line[i];
         }
     }
-    parts.push_back(current); //the last part has no '|' after it
+    parts.push_back(current);
     return parts;
 }
