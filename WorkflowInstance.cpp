@@ -11,8 +11,8 @@
  */
 
 #include "WorkflowInstance.h"
-#include <iostream>
 
+#include "Log.h"
 #include "WorkflowComponent.h"
 #include "WorkflowOrchestrator.h"
 
@@ -40,8 +40,8 @@ WorkflowInstance::~WorkflowInstance()
 
 void WorkflowInstance::start()
 {
-    std::cout << "[WorkflowInstance #" << id << " - " << definitionName
-              << " v" << definitionVersion << "] Starting execution..." << std::endl;
+    TLOG("[WorkflowInstance #" << id << " - " << definitionName
+         << " v" << definitionVersion << "] Starting execution...");
 
     if (root != nullptr)
     {
@@ -52,8 +52,8 @@ void WorkflowInstance::start()
 
 void WorkflowInstance::stop()
 {
-    std::cout << "[WorkflowInstance #" << id << " - " << definitionName
-              << "] Stopping execution..." << std::endl;
+    TLOG("[WorkflowInstance #" << id << " - " << definitionName
+         << "] Stopping execution...");
 
     if (root != nullptr)
     {

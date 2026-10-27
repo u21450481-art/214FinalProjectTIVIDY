@@ -4,10 +4,10 @@
  */
 
 #include "CustomDefinitionBuilder.h"
-#include <iostream>
 #include <memory>
 #include <stdexcept>
 
+#include "Log.h"
 #include "Subprocess.h"
 #include "Task.h"
 #include "Department.h"
@@ -36,8 +36,8 @@ void CustomDefinitionBuilder::reset(const std::string &workflowName, int version
     subprocessRegistry.clear();
     departmentRegistry.clear();
 
-    std::cout << "[CustomDefinitionBuilder] Initialized blueprint '"
-              << workflowName << "' (v" << version << ") with Root Subprocess." << std::endl;
+    TLOG("[CustomDefinitionBuilder] Initialized blueprint '"
+         << workflowName << "' (v" << version << ") with Root Subprocess.");
 
     Subprocess *root = new Subprocess(workflowName + "_Root");
     definition->setRoot(root);
@@ -62,7 +62,7 @@ void CustomDefinitionBuilder::addDepartment(const std::string &deptName)
 {
     if (definition == nullptr)
         reset();
-    std::cout << "  + [Builder] Added Department: " << deptName << std::endl;
+    TLOG("  + [Builder] Added Department: " << deptName);
 
     Department *dept = new Department(deptName);
     departmentRegistry[deptName] = dept;
@@ -73,8 +73,8 @@ void CustomDefinitionBuilder::addEmployee(const std::string &empName, const std:
 {
     if (definition == nullptr)
         reset();
-    std::cout << "  + [Builder] Added Employee: " << empName
-              << (deptName.empty() ? " (Standalone)" : " -> Dept: " + deptName) << std::endl;
+    TLOG("  + [Builder] Added Employee: " << empName
+         << (deptName.empty() ? " (Standalone)" : " -> Dept: " + deptName));
 
     Employee *emp = new Employee(empName);
     if (!deptName.empty() && departmentRegistry.count(deptName))
@@ -108,8 +108,8 @@ void CustomDefinitionBuilder::addSubprocess(const std::string &subprocessName, c
         throw std::invalid_argument("Unknown parent subprocess: " + targetParent);
     }
 
-    std::cout << "  + [Builder] Added Subprocess '" << subprocessName
-              << "' inside '" << targetParent << "'" << std::endl;
+    TLOG("  + [Builder] Added Subprocess '" << subprocessName
+         << "' inside '" << targetParent << "'");
 
     std::unique_ptr<Subprocess> sub(new Subprocess(subprocessName));
     parent->second->add(sub.get());
@@ -130,9 +130,9 @@ void CustomDefinitionBuilder::addTask(const std::string &taskName,
         throw std::invalid_argument("Unknown parent subprocess: " + targetParent);
     }
 
-    std::cout << "  + [Builder] Added Task '" << taskName
-              << "' inside '" << targetParent << "' (Priority: " << priority
-              << (branchCondition.empty() ? "" : ", Condition: " + branchCondition) << ")" << std::endl;
+    TLOG("  + [Builder] Added Task '" << taskName
+         << "' inside '" << targetParent << "' (Priority: " << priority
+         << (branchCondition.empty() ? "" : ", Condition: " + branchCondition) << ")");
 
     std::unique_ptr<Task> task(new Task(priority, deadline, taskName));
     parent->second->add(task.get());

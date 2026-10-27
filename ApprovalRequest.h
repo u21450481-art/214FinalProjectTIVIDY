@@ -1,21 +1,23 @@
 #ifndef APPROVAL_REQUEST_H
 #define APPROVAL_REQUEST_H
 
-#include <strting>
+#include <string> //spelling error
 
-enum class AuthorityLevel{
-    LEVEL_1,   //eg Basic clearance
-    LEVEL_2,   //eg Intermediate Clearance
-    LEVEL_3    //eg HighClearance
+enum class AuthorityLevel
+{
+    LEVEL_1, // eg Basic clearance
+    LEVEL_2, // eg Intermediate Clearance
+    LEVEL_3  // eg HighClearance
 }
 
-struct ApprovalRequest{
+struct ApprovalRequest
+{
     std::string taskName;
     AuthorityLevel requiredLevel;
     bool isApproved = false;
 
     ApprovalRequest(std::string name, AuthorityLevel level) : taskName(name),
-    AuthorityLevel(level) , isApproved(false) {}
+                                                              AuthorityLevel(level), isApproved(false) {}
 };
 
-#endif 
+#endif

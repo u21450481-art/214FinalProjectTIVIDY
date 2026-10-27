@@ -11,8 +11,8 @@
  */
 
 #include "WorkflowDefinition.h"
-#include <iostream>
 
+#include "Log.h"
 #include "WorkflowComponent.h"
 #include "Participant.h"
 
@@ -51,9 +51,9 @@ std::unique_ptr<WorkflowInstance> WorkflowDefinition::instantiate()
     }
 
     int assignedId = nextInstanceId++;
-    std::cout << "[WorkflowDefinition] Instantiating new WorkflowInstance #"
-              << assignedId << " from blueprint '" << name
-              << "' (v" << version << ")." << std::endl;
+    TLOG("[WorkflowDefinition] Instantiating new WorkflowInstance #"
+         << assignedId << " from blueprint '" << name
+         << "' (v" << version << ").");
 
     return std::unique_ptr<WorkflowInstance>(
         new WorkflowInstance(assignedId, name, version, clonedRoot, nullptr));
