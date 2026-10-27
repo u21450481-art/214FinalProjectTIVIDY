@@ -79,8 +79,7 @@ public:
      */
     void addTask(const std::string &taskName,
                  const std::string &parentSubprocess = "",
-                 int priority = 1,
-                 const std::string &branchCondition = "");
+                 int priority = 1, std::string deadline = "", const std::string &branchCondition = "");
 };
 
 #endif // CUSTOMDEFINITIONBUILDER_H
