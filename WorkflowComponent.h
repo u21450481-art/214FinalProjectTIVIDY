@@ -11,29 +11,30 @@ using namespace std;
 
 class WorkflowOrchestrator;
 
-class WorkflowComponent {
-    WorkflowOrchestrator* mediator;
-    Stage*  state;
+class WorkflowComponent
+{
+    WorkflowOrchestrator *mediator;
+    Stage *state;
 
-    public:
+public:
     WorkflowComponent();
     virtual ~WorkflowComponent();
 
     virtual void execute() = 0;
-    virtual void add(WorkflowComponent* c)  {};
-    virtual void remove(WorkflowComponent* c)  {};
-    virtual vector<WorkflowComponent*> getChildren() {return {};};
-    
-    Stage*  getState();
-    void setState(Stage* s);
-    WorkflowIterator* createIterator();
+    virtual void add(WorkflowComponent *c) {};
+    virtual void remove(WorkflowComponent *c) {};
+    virtual vector<WorkflowComponent *> getChildren() { return {}; };
+
+    Stage *getState();
+    void setState(Stage *s);
+    WorkflowIterator *createIterator(); // this is a factory method
     void start();
     void complete();
     void fail();
     void cancel();
-    void setMediator(WorkflowOrchestrator* mediator);
-    
+    void setMediator(WorkflowOrchestrator *mediator);
+
+    // ADDED THIS FOR PROTOTYPE PATTERN
+    virtual WorkflowComponent *clone() const = 0;
 };
-
-
 #endif

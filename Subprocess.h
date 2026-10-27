@@ -9,21 +9,22 @@
 
 using namespace std;
 
-class Subprocess: public WorkflowComponent {
-    vector<WorkflowComponent*> children;
+class Subprocess : public WorkflowComponent
+{
+    vector<WorkflowComponent *> children;
+    std::string name; // added this to integrate with builder
 
-    public:
-    Subprocess();
+public:
+    Subprocess(std::string processName = "Unnamed_Subprocess"); // added name
     ~Subprocess();
     void execute();
-    void add(WorkflowComponent* c) override;
-    void remove(WorkflowComponent* c) override;
-    vector<WorkflowComponent*> getChildren() override;
+    void add(WorkflowComponent *c) override;
+    void remove(WorkflowComponent *c) override;
+    vector<WorkflowComponent *> getChildren() override;
     bool allChildrenComplete();
-    
+
+    // PROTOTYPE
+    virtual WorkflowComponent *clone() const override;
 };
-
-
-
 
 #endif
