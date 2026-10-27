@@ -13,15 +13,14 @@
 #include "WorkflowInstance.h"
 #include <iostream>
 
-// Uncomment as teammates push their pattern headers:
-// #include "WorkflowComponent.h"
-// #include "WorkflowOrchestrator.h"
+#include "WorkflowComponent.h"
+#include "WorkflowOrchestrator.h"
 
 WorkflowInstance::WorkflowInstance(int instanceId,
-                                   const std::string& defName,
+                                   const std::string &defName,
                                    int defVersion,
-                                   WorkflowComponent* clonedRoot,
-                                   WorkflowOrchestrator* orchestrator)
+                                   WorkflowComponent *clonedRoot,
+                                   WorkflowOrchestrator *orchestrator)
     : root(clonedRoot),
       id(instanceId),
       definitionName(defName),
@@ -29,63 +28,80 @@ WorkflowInstance::WorkflowInstance(int instanceId,
       definitionVersion(defVersion),
       payload() {}
 
-WorkflowInstance::~WorkflowInstance() {
-    // TODO: Uncomment once WorkflowComponent.h is implemented:
-    // delete root;
-    root = nullptr;
+WorkflowInstance::~WorkflowInstance()
+{
+
+    if (root != nullptr)
+    {
+        delete root;
+        root = nullptr;
+    }
 }
 
-void WorkflowInstance::start() {
+void WorkflowInstance::start()
+{
     std::cout << "[WorkflowInstance #" << id << " - " << definitionName
               << " v" << definitionVersion << "] Starting execution..." << std::endl;
-    // TODO: Uncomment once WorkflowComponent.h is implemented:
-    // if (root != nullptr) {
-    //     root->start();
-    //     root->execute();
-    // }
+
+    if (root != nullptr)
+    {
+        root->start();
+        root->execute();
+    }
 }
 
-void WorkflowInstance::stop() {
+void WorkflowInstance::stop()
+{
     std::cout << "[WorkflowInstance #" << id << " - " << definitionName
               << "] Stopping execution..." << std::endl;
-    // TODO: Uncomment once WorkflowComponent.h is implemented:
-    // if (root != nullptr) {
-    //     root->cancel();
-    // }
+
+    if (root != nullptr)
+    {
+        root->cancel();
+    }
 }
 
-DataPayload& WorkflowInstance::getPayload() {
+DataPayload &WorkflowInstance::getPayload()
+{
     return payload;
 }
 
-const DataPayload& WorkflowInstance::getPayload() const {
+const DataPayload &WorkflowInstance::getPayload() const
+{
     return payload;
 }
 
-int WorkflowInstance::getId() const {
+int WorkflowInstance::getId() const
+{
     return id;
 }
 
-std::string WorkflowInstance::getDefinitionName() const {
+std::string WorkflowInstance::getDefinitionName() const
+{
     return definitionName;
 }
 
-int WorkflowInstance::getDefinitionVersion() const {
+int WorkflowInstance::getDefinitionVersion() const
+{
     return definitionVersion;
 }
 
-WorkflowComponent* WorkflowInstance::getRoot() const {
+WorkflowComponent *WorkflowInstance::getRoot() const
+{
     return root;
 }
 
-void WorkflowInstance::setRoot(WorkflowComponent* newRoot) {
+void WorkflowInstance::setRoot(WorkflowComponent *newRoot)
+{
     root = newRoot;
 }
 
-WorkflowOrchestrator* WorkflowInstance::getMediator() const {
+WorkflowOrchestrator *WorkflowInstance::getMediator() const
+{
     return mediator;
 }
 
-void WorkflowInstance::setMediator(WorkflowOrchestrator* newMediator) {
+void WorkflowInstance::setMediator(WorkflowOrchestrator *newMediator)
+{
     mediator = newMediator;
 }

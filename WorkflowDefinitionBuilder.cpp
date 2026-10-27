@@ -14,20 +14,23 @@
 
 WorkflowDefinitionBuilder::WorkflowDefinitionBuilder() : definition(nullptr) {}
 
-WorkflowDefinitionBuilder::~WorkflowDefinitionBuilder() {
+WorkflowDefinitionBuilder::~WorkflowDefinitionBuilder()
+{
     // Only delete if a partial build was abandoned before getResult() was called
     delete definition;
     definition = nullptr;
 }
 
-void WorkflowDefinitionBuilder::reset() {
+void WorkflowDefinitionBuilder::reset()
+{
     delete definition;
     definition = new WorkflowDefinition();
 }
 
-WorkflowDefinition* WorkflowDefinitionBuilder::getResult() {
-    WorkflowDefinition* result = definition;
-    // Detach ownership so the Product survives the Builder
+WorkflowDefinition *WorkflowDefinitionBuilder::getResult()
+{
+    WorkflowDefinition *result = definition;
+    // detach ownership so the product survives the Builder
     definition = nullptr;
     return result;
 }

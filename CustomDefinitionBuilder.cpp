@@ -5,6 +5,8 @@
 
 #include "CustomDefinitionBuilder.h"
 #include <iostream>
+#include <memory>
+#include <stdexcept>
 
 #include "Subprocess.h"
 #include "Task.h"
@@ -77,7 +79,7 @@ void CustomDefinitionBuilder::addEmployee(const std::string &empName, const std:
     Employee *emp = new Employee(empName);
     if (!deptName.empty() && departmentRegistry.count(deptName))
     {
-        departmentRegistry[deptName]->Add(emp);
+        departmentRegistry[deptName]->add(emp);
     }
     else
     {
@@ -87,39 +89,57 @@ void CustomDefinitionBuilder::addEmployee(const std::string &empName, const std:
 
 void CustomDefinitionBuilder::addSubprocess(const std::string &subprocessName, const std::string &parentSubprocess)
 {
+    // memory leak
     if (definition == nullptr)
         reset();
-    std::string targetParent = parentSubprocess.empty() ? "ROOT" : parentSubprocess;
+    std::string targetParent;
+    if (parentSubprocess.empty())
+    {
+        targetParent = "ROOT";
+    }
+    else
+    {
+        targetParent = parentSubprocess;
+    }
+
+    auto parent = subprocessRegistry.find(targetParent);
+    if (parent == subprocessRegistry.end())
+    {
+        throw std::invalid_argument("Unknown parent subprocess: " + targetParent);
+    }
+
     std::cout << "  + [Builder] Added Subprocess '" << subprocessName
               << "' inside '" << targetParent << "'" << std::endl;
 
-    Subprocess *sub = new Subprocess(subprocessName);
-    subprocessRegistry[subprocessName] = sub;
-    if (subprocessRegistry.count(targetParent))
-    {
-        subprocessRegistry[targetParent]->Add(sub);
-    }
+    std::unique_ptr<Subprocess> sub(new Subprocess(subprocessName));
+    parent->second->add(sub.get());
+    subprocessRegistry[subprocessName] = sub.release();
 }
 
 void CustomDefinitionBuilder::addTask(const std::string &taskName,
                                       const std::string &parentSubprocess,
-                                      int priority,
-                                      const std::string &branchCondition)
+                                      int priority, std::string deadline, const std::string &branchCondition)
 {
+    //    Task(int priority, std::string deadline, std::string name);
     if (definition == nullptr)
         reset();
     std::string targetParent = parentSubprocess.empty() ? "ROOT" : parentSubprocess;
+    auto parent = subprocessRegistry.find(targetParent);
+    if (parent == subprocessRegistry.end())
+    {
+        throw std::invalid_argument("Unknown parent subprocess: " + targetParent);
+    }
+
     std::cout << "  + [Builder] Added Task '" << taskName
               << "' inside '" << targetParent << "' (Priority: " << priority
               << (branchCondition.empty() ? "" : ", Condition: " + branchCondition) << ")" << std::endl;
 
-    Task *task = new Task(taskName, priority, branchCondition);
-    if (subprocessRegistry.count(targetParent))
-    {
-        subprocessRegistry[targetParent]->Add(task);
-    }
+    std::unique_ptr<Task> task(new Task(priority, deadline, taskName));
+    parent->second->add(task.get());
+    task.release();
 }
 
+// extracts assembled WorkflowDefinition from builder once construction is complete
 WorkflowDefinition *CustomDefinitionBuilder::getResult()
 {
     subprocessRegistry.clear();
