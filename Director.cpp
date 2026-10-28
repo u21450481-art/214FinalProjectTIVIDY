@@ -23,7 +23,7 @@ void Director::setBuilder(WorkflowDefinitionBuilder* b) {
     builder = b;
 }
 
-void Director::Construct() {
+void Director::construct() {
     if (builder == nullptr) {
         std::cerr << "[Director] Error: Cannot Construct() because no builder is set!" << std::endl;
         return;

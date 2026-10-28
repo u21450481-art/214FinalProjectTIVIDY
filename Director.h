@@ -50,7 +50,7 @@ public:
      * @brief Executes the full step-by-step construction sequence on the active builder.
      * Calls reset(), buildParticipants(), and buildTaskTree() in strict order.
      */
-    void Construct();
+    void construct();
 };
 
 #endif // DIRECTOR_H
