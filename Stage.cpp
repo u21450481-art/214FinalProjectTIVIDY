@@ -16,3 +16,7 @@ void Stage::reject(WorkflowComponent* c){
 void Stage::cancel(WorkflowComponent* c){
     std::cout << "[State Warning] Cannot cancel from state: " << getName() << "\n";
 }
+
+bool Stage::isFinished() const{
+    return false;
+}

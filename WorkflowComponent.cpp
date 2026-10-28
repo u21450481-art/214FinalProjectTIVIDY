@@ -4,14 +4,12 @@
 
 
 WorkflowComponent::WorkflowComponent() :
-   mediator(nullptr), state(new NotStarted()) {}
+   mediator(nullptr), state(NotStarted::instance()) {}
 
-WorkflowComponent::~WorkflowComponent() { 
-    delete state;
-}
+//states are shared and never deleted, so there is nothing to clean up
+WorkflowComponent::~WorkflowComponent() {}
 
 void WorkflowComponent::setState(Stage* s){
-    delete state; 
     state = s; 
 }
 
@@ -23,15 +21,17 @@ void WorkflowComponent::setMediator(WorkflowOrchestrator* m){
     mediator = m;
 }
 
+//start now asks the state to start (before, it asked the state to execute)
 void WorkflowComponent::start(){
-   state->handleExecute(this);
+   state->start(this);
 }
 
 void WorkflowComponent::complete(){
     state->complete(this);
 }
 
-void WorkflowComponent::fail(){
+//was called fail(), renamed to match Stage::reject
+void WorkflowComponent::reject(){
     state->reject(this);
 }
 

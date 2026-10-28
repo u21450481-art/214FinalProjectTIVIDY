@@ -3,134 +3,55 @@
 
 #include "Stage.h"
 
-/**
- * @file ConcreteStages.h
- * @brief Defines the concrete states for the workflow component State pattern.
- */
+//The states hold no data, so ONE shared instance of each is enough. instance() returns it.
+//Nobody news or deletes a state, so a command can safely remember the previous state.
 
-/**
- * @brief Represents the initial NotStarted state of a workflow component.
- */
+//Not Stated
 class NotStarted : public Stage{
 public:
-    /**
-     * @brief Handles execution when the component is in the NotStarted state.
-     * @param c Pointer to the WorkflowComponent being executed.
-     */
+    static Stage* instance();
     void handleExecute(WorkflowComponent* c) override;
-
-    /**
-     * @brief Transitions the component from NotStarted to InProgress.
-     * @param c Pointer to the WorkflowComponent.
-     */
     void start(WorkflowComponent* c) override;
-
-    /**
-     * @brief Cancels the workflow component from the NotStarted state.
-     * @param c Pointer to the WorkflowComponent.
-     */
     void cancel(WorkflowComponent* c) override;
-
-    /**
-     * @brief Gets the string name of the state.
-     * @return std::string representing the state name ("NotStarted").
-     */
     std::string getName() const override {return "NotStarted";}
 };
 
-/**
- * @class InProgress
- * @brief Represents the active state while a workflow component is currently executing.
- */
+//InProgress
 class InProgress : public Stage{
 public:
-    /**
-     * @brief Handles execution while in the InProgress state.
-     * @param c Pointer to the WorkflowComponent.
-     */
+    static Stage* instance();
     void handleExecute(WorkflowComponent* c) override;
-
-    /**
-     * @brief Completes the workflow component execution.
-     * @param c Pointer to the WorkflowComponent.
-     */
     void complete(WorkflowComponent* c) override;
-
-    /**
-     * @brief Rejects the workflow component execution.
-     * @param c Pointer to the WorkflowComponent.
-     */
     void reject(WorkflowComponent* c) override;
-
-    /**
-     * @brief Cancels the workflow component execution.
-     * @param c Pointer to the WorkflowComponent.
-     */
     void cancel(WorkflowComponent* c) override;
-
-    /**
-     * @brief Gets the string name of the state.
-     * @return std::string representing the state name ("InProgress").
-     */
     std::string getName() const override {return "InProgress";}
 };
 
-/**
- * @class Complete
- * @brief Represents the terminal success state of a workflow component.
- */
+//Complete (Terminal)
 class Complete : public Stage{
 public:
-    /**
-     * @brief Handles execution when already complete (execution blocked).
-     * @param c Pointer to the WorkflowComponent.
-     */
+    static Stage* instance();
     void handleExecute(WorkflowComponent* c) override;
-
-    /**
-     * @brief Gets the string name of the state.
-     * @return std::string representing the state name ("Complete").
-     */
     std::string getName() const override {return "Complete";}
+    bool isFinished() const override {return true;}
 };
 
-/**
- * @class Rejected
- * @brief Represents the terminal rejected state of a workflow component.
- */
+//Rejected (Terminal)
 class Rejected : public Stage{
 public:
-    /**
-     * @brief Handles execution when the workflow component is rejected.
-     * @param c Pointer to the WorkflowComponent.
-     */
+    static Stage* instance();
     void handleExecute(WorkflowComponent* c) override;
-
-    /**
-     * @brief Gets the string name of the state.
-     * @return std::string representing the state name ("Rejected").
-     */
     std::string getName() const override {return "Rejected";}
+    bool isFinished() const override {return true;}
 };
 
-/**
- * @class Cancelled
- * @brief Represents the terminal cancelled state of a workflow component.
- */
+//Cancelled (Terminal)
 class Cancelled : public Stage{
 public:
-    /**
-     * @brief Handles execution when the workflow component is cancelled.
-     * @param c Pointer to the WorkflowComponent.
-     */
+    static Stage* instance();
     void handleExecute(WorkflowComponent* c) override;
-
-    /**
-     * @brief Gets the string name of the state.
-     * @return std::string representing the state name ("Cancelled").
-     */
-        std::string getName() const override {return "Cancelled";}
+    std::string getName() const override {return "Cancelled";}
+    bool isFinished() const override {return true;}
 };
 
 #endif
-

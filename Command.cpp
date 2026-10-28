@@ -1,7 +1,7 @@
 #include "Command.h"
 
-//command holds no data, it only defines the interface.
-Command::Command() {}
+//sets up a command (nothing to store, Command only defines the interface)
+Command::Command(){}
 
-//derived classes clean up their own data.
-Command::~Command() {}
+//cleans up a command (the derived commands clean up their own data)
+Command::~Command(){}

@@ -3,14 +3,15 @@
 
 #include "StateTransitionCommand.h"
 
-/** NotStarted -> InProgress. Records that work has begun, refused in any other state. */
+//moves a component from NotStarted to InProgress
 class StartCommand: public StateTransitionCommand{
     protected:
-        //calls target->start()
+        //calls target->start(), the current state decides whether that is allowed
         void applyTransition();
 
     public:
         StartCommand(WorkflowComponent* target); //target: the component to Start
+
         std::string describe() const;
 };
 

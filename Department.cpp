@@ -1,6 +1,6 @@
 #include "Department.h"
 
-#include<algorithm>
+#include <algorithm>
 
 Department::Department(std::string name): departmentName(name){};
 
@@ -21,9 +21,9 @@ void Department::add(Participant* p){
 }
 
 void Department::remove(Participant* p){
- participants.erase(std::remove(participants.begin(), participants.end(), p), participants.end());
+    participants.erase(std::remove(participants.begin(), participants.end(), p), participants.end());
 }
 
-vector<Participant*> Department::getChildren(){
+std::vector<Participant*> Department::getChildren(){
     return participants;
 }

@@ -3,20 +3,23 @@
 
 #include <string>
 
-//Abstract Command: one action the workflow engine can perform, reverse and describe.
+//one action the engine can run, undo and describe. Every action (change a state, assign a task, set data) is a Command
 class Command{
+    private:
+        //copying is switched off: some commands own other commands and history deletes them once
+        Command(const Command&) = delete;
+        Command& operator=(const Command&) = delete;
+
     protected:
         Command();
 
-    private:
-        Command(const Command&) = delete;
-        Command& operator=(const Command&) = delete;
-        
     public:
         virtual ~Command();
+
         virtual bool execute() = 0;
+
         virtual bool undo() = 0;
-        //what this command does
+
         virtual std::string describe() const = 0;
 };
 

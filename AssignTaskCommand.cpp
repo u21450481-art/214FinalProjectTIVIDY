@@ -4,18 +4,19 @@
 #include "Stage.h"
 #include "Task.h"
 
+//sets up the command with the task and the person to give it to
 AssignTaskCommand::AssignTaskCommand(Task* task, Participant* assignee): task(task), assignee(assignee), previous(nullptr), executed(false) {}
 
-//change the assignee, remembering the old one.
+//gives the task to the participant and remembers who had it before. Returns false if the task or participant is missing, the task is finished, or it already belongs to that participant
 bool AssignTaskCommand::execute(){
     if(task == nullptr || assignee == nullptr){
-        return false; //nothing valid to assign
+        return false;
     }
     if(task->getState()->isFinished()){
-        return false; //cannot hand out finished work
+        return false;
     }
     if(task->getAssignee() == assignee){
-        return false; //no change
+        return false;
     }
 
     previous = task->getAssignee();
@@ -24,7 +25,7 @@ bool AssignTaskCommand::execute(){
     return true;
 }
 
-//put the old assignee back (null means the task goes back to unassigned).
+//gives the task back to the previous person (or to nobody) in case the wrong person was picked
 bool AssignTaskCommand::undo(){
     if(!executed){
         return false;
@@ -34,6 +35,7 @@ bool AssignTaskCommand::undo(){
     return true;
 }
 
+//returns the history text, for example Assign 'Review' to Amy
 std::string AssignTaskCommand::describe() const{
     if(task == nullptr || assignee == nullptr){
         return "Assign (invalid)";

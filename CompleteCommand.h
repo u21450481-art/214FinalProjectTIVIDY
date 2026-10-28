@@ -3,14 +3,15 @@
 
 #include "StateTransitionCommand.h"
 
-/** InProgress -> Complete. Records that work finished, usually what releases dependent tasks. */
+//moves a component from InProgress to Complete
 class CompleteCommand: public StateTransitionCommand{
     protected:
-        //calls target->complete()
+        //calls target->complete(), the current state decides whether that is allowed
         void applyTransition();
 
     public:
         CompleteCommand(WorkflowComponent* target); //target: the component to Complete
+
         std::string describe() const;
 };
 

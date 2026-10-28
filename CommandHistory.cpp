@@ -1,38 +1,33 @@
 #include "CommandHistory.h"
 
-//start empty, nothing stored and nothing done
+//starts an empty history with nothing stored and nothing done
 CommandHistory::CommandHistory(): cursor(0){}
 
-//history owns every command in the list, so it deletes them all here
+//deletes every command still stored, because the history owns them
 CommandHistory::~CommandHistory(){
     for(int i = 0; i < (int)commands.size(); i++){
         delete commands[i];
     }
 }
 
-//run executes the command and keeps it ONLY if it worked.
-//null command: returns false.
-//execute fails: history deletes the command, returns false, redo list is left alone.
-//execute works: old redo commands are deleted (that future no longer exists),
-//the command is stored and true is returned.
+//runs a command and keeps it only if it worked. The history takes ownership of the command, so it deletes it if it fails. A new command also deletes any undone commands that could have been redone
 bool CommandHistory::run(Command* c){
     if(c == nullptr){
         return false;
     }
 
     if(!c->execute()){
-        delete c; //we own it and it did nothing, so it is not worth keeping
+        delete c;
         return false;
     }
 
-    discardRedoTail(); //a brand new action cancels anything that was undone before
+    discardRedoTail();
     commands.push_back(c);
     cursor++;
     return true;
 }
 
-//undo reverses the newest done command and moves the cursor back by one.
-//nothing done: returns false. The command's own undo fails: false and the cursor stays.
+//undoes the most recent command, for example when a wrong value was entered. Returns false if there is nothing to undo
 bool CommandHistory::undo(){
     if(cursor == 0){
         return false;
@@ -47,8 +42,7 @@ bool CommandHistory::undo(){
     return true;
 }
 
-//redo executes the newest undone command again and moves the cursor forward by one.
-//nothing undone: returns false. Execute fails now (the world changed): false and the cursor stays.
+//does the most recently undone command again. Returns false if there is nothing to redo
 bool CommandHistory::redo(){
     if(cursor >= (int)commands.size()){
         return false;
@@ -63,20 +57,22 @@ bool CommandHistory::redo(){
     return true;
 }
 
+//tells whether there is something to undo
 bool CommandHistory::canUndo() const{
     return cursor > 0;
 }
 
+//tells whether there is something to redo
 bool CommandHistory::canRedo() const{
     return cursor < (int)commands.size();
 }
 
+//returns how many commands are stored (done and undone)
 int CommandHistory::size() const{
     return (int)commands.size();
 }
 
-//getHistory asks every command to describe itself.
-//commands after the cursor were undone, so they get a marker in front.
+//returns one line per command, oldest first, and marks the undone ones with (undone)
 std::vector<std::string> CommandHistory::getHistory() const{
     std::vector<std::string> lines;
     for(int i = 0; i < (int)commands.size(); i++){
@@ -89,7 +85,7 @@ std::vector<std::string> CommandHistory::getHistory() const{
     return lines;
 }
 
-//deletes the commands after the cursor and shrinks the list to match
+//deletes the commands that were undone, because a new command replaces them
 void CommandHistory::discardRedoTail(){
     for(int i = cursor; i < (int)commands.size(); i++){
         delete commands[i];

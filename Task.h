@@ -5,23 +5,24 @@
 #include "Participant.h"
 #include <string>
 
-class Task : public WorkflowComponent
-{
 
-    Participant *assignee;
+class Task: public WorkflowComponent{
+
+    Participant* assignee;
     std::string taskName;
     int priority;
     std::string deadline;
+    std::string outcome; //the decision stored on the task, for example "approved"
 
-public:
+    public:
     Task(int priority, std::string deadline, std::string name);
     ~Task();
     std::string getName();
     void execute();
-    void setAssignee(Participant *p);
-
-    // PROTOTYPE
-    virtual WorkflowComponent *clone() const override;
+    void setAssignee(Participant* p);
+    Participant* getAssignee();
+    void setOutcome(const std::string& o);
+    std::string getOutcome();
 };
 
 #endif

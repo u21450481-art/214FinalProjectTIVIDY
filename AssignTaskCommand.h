@@ -18,13 +18,8 @@ class AssignTaskCommand: public Command{
     public:
         AssignTaskCommand(Task* task, Participant* assignee); //tasK:task to assign , assignee:who were asiigning the task to.
 
-        /**
-        * Sets the assignee. Returns false when: task or assignee is null, the task
-        * is already finished, or it is already assigned to this participant.
-        */
         bool execute();
 
-        /** Restores the previous assignee (which may be "nobody"). */
         bool undo();
         std::string describe() const;
 };

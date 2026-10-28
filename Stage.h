@@ -29,6 +29,9 @@ public:
      * @brief Gets the state name.
      */
      virtual std::string getName() const = 0;
+
+    //tells whether this state is final (Complete, Rejected, Cancelled). The default is false
+    virtual bool isFinished() const;
 };
 
 
