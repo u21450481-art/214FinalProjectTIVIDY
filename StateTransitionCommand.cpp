@@ -1,21 +1,24 @@
 #include "StateTransitionCommand.h"
+
 #include "Stage.h"
 #include "WorkflowComponent.h"
 
+//sets up the command with the component whose state will change
 StateTransitionCommand::StateTransitionCommand(WorkflowComponent* target): target(target), previous(nullptr), executed(false){}
 
+//cleans up the command (it does not own the component or the states)
 StateTransitionCommand::~StateTransitionCommand(){}
 
-//try the transition and report whether the state really changed.
+//tries the transition and returns true only if the state really changed. Returns false if the current state does not allow the move, and then nothing is changed
 bool StateTransitionCommand::execute(){
     if(target == nullptr){
         return false;
     }
 
-    previous = target->getState(); //remember where we were
-    applyTransition(); //2 the subclass tries start/complete/...
+    previous = target->getState();
+    applyTransition();
 
-    if(target->getState() == previous){ //3 nothing moved
+    if(target->getState() == previous){
         executed = false;
         return false;
     }
@@ -24,7 +27,7 @@ bool StateTransitionCommand::execute(){
     return true;
 }
 
-//restore the remembered state directly.
+//puts the previous state back, for example when a task was started by mistake. Returns false if the command was never executed
 bool StateTransitionCommand::undo(){
     if(!executed || target == nullptr){
         return false;
@@ -35,10 +38,12 @@ bool StateTransitionCommand::undo(){
     return true;
 }
 
+//returns the component this command works on
 WorkflowComponent* StateTransitionCommand::getTarget() const{
     return target;
 }
 
+//builds the history text, for example Start 'Review' (NotStarted -> InProgress)
 std::string StateTransitionCommand::describeTransition(const std::string& verb) const{
     if(target == nullptr){
         return verb + " (no target)";

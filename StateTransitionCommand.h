@@ -7,11 +7,7 @@
 class WorkflowComponent;
 class Stage;
 
-/**
- * Base class for commands that move a component to another lifecycle state.
- * execute() follows fixed steps (Template Method), subclasses only say which
- * transition to try
- */
+//base class for the commands that move a component to another state (start, complete, reject, cancel)
 class StateTransitionCommand: public Command{
     private:
         WorkflowComponent* target; //component whose state we change
@@ -24,12 +20,15 @@ class StateTransitionCommand: public Command{
 
         //builds text like "Start 'Review' (NotStarted -> InProgress)"
         std::string describeTransition(const std::string& verb) const;
+
         WorkflowComponent* getTarget() const;
 
     public:
         StateTransitionCommand(WorkflowComponent* target);
         virtual ~StateTransitionCommand();
+
         bool execute();
+
         bool undo();
 };
 

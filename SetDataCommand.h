@@ -6,7 +6,7 @@
 
 class DataPayload;
 
-// writes one value into a workflow instance's data, and can reverse it.
+//writes one value into the instance data and can put the old value back
 class SetDataCommand: public Command{
     private:
         DataPayload* payload;
@@ -18,8 +18,10 @@ class SetDataCommand: public Command{
 
     public:
         SetDataCommand(DataPayload* payload, const std::string& key, const std::string& newValue);
-        bool execute(); //saves the old value (if any) and writes the new one
-        bool undo(); //writes the old value back, or removes the key if it did not exist before
+
+        bool execute();
+
+        bool undo();
         std::string describe() const;
 };
 

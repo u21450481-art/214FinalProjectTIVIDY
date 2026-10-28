@@ -3,14 +3,15 @@
 
 #include "StateTransitionCommand.h"
 
-/** InProgress -> Rejected. The exception path: the work was refused (failed approval, denied claim). */
+//moves a component from InProgress to Rejected (the exception path)
 class RejectCommand: public StateTransitionCommand{
     protected:
-        //calls target->reject()
+        //calls target->reject(), the current state decides whether that is allowed
         void applyTransition();
 
     public:
         RejectCommand(WorkflowComponent* target); //target: the component to Reject
+
         std::string describe() const;
 };
 

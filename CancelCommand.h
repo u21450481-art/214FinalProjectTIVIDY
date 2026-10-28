@@ -3,13 +3,15 @@
 
 #include "StateTransitionCommand.h"
 
-//NotStarted or InProgress: Cancelled. Records that the work was abandoned.
+//moves a component from NotStarted or InProgress to Cancelled
 class CancelCommand: public StateTransitionCommand{
     protected:
+        //calls target->cancel(), the current state decides whether that is allowed
         void applyTransition();
-        
+
     public:
-        CancelCommand(WorkflowComponent* target); //target :the component to Cancel.
+        CancelCommand(WorkflowComponent* target); //target: the component to Cancel
+
         std::string describe() const;
 };
 

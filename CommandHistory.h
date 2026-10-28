@@ -5,17 +5,14 @@
 #include <vector>
 #include "Command.h"
 
-/**
- * Runs commands and remembers them so they can be undone, redone and listed (the Invoker).
- * Everything is kept in ONE list plus a cursor:
- *   commands = [A, B, C, D]   cursor = 3   ->  A, B, C are done and D is undone
- */
-
+//runs commands and remembers them so they can be undone, redone and listed. It owns the commands it is given and deletes them
 class CommandHistory{
     private:
-        std::vector<Command*> commands;
+        std::vector<Command*> commands; //owned, oldest first
         int cursor; //how many of the commands are currently done
-        void discardRedoTail(); //deletes every command after the cursor
+
+        //deletes every command after the cursor (the ones that could still be redone)
+        void discardRedoTail();
 
         //history owns raw pointers, so copying it would delete things twice
         CommandHistory(const CommandHistory&) = delete;
@@ -24,12 +21,18 @@ class CommandHistory{
     public:
         CommandHistory();
         ~CommandHistory();
-        bool run(Command* c); 
-        bool undo(); //undoes the newest done command. Returns false if there is nothing to undo.
-        bool redo(); //executes the newest undone command again
+
+        bool run(Command* c);
+
+        bool undo();
+
+        bool redo();
+
         bool canUndo() const;
         bool canRedo() const;
-        int size() const;  //How many commands are stored (done and undone)
+
+        int size() const;
+
         std::vector<std::string> getHistory() const;
 };
 
