@@ -16,6 +16,10 @@ namespace StandardKeys{
     const std::string STATUS_APPROVED = "approved";
     const std::string STATUS_REJECTED = "rejected";
     const std::string STATUS_UNKNOWN = "unknown"; //the source used a code we do not recognise
+
+    //every standard key in one list, so code can loop over them (a new key must be added here too)
+    const int KEY_COUNT = 4;
+    const std::string ALL_KEYS[4] = {NAME, STATUS, AMOUNT, SOURCE};
 }
 
 #endif
