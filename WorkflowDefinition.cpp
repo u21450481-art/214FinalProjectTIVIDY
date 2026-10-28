@@ -1,39 +1,27 @@
 /**
  * @file WorkflowDefinition.cpp
- * @brief Skeleton implementation of WorkflowDefinition (Builder Product).
- *
- * ============================================================================
- * DESIGN ROLE & PATTERN PARTICIPATION:
- * - GoF Pattern: Builder Pattern (Participant: Product)
- * - Assembled by WorkflowDefinitionBuilder and ConcreteBuilders.
- * - Spawns isolated WorkflowInstance objects via instantiate().
- * ============================================================================
+ * @brief Implementation of WorkflowDefinition (Builder Product).
  */
 
 #include "WorkflowDefinition.h"
-#include <iostream>
 
-#include "WorkflowComponent.h"
+#include "Log.h"
 #include "Participant.h"
+#include "WorkflowComponent.h"
 
 WorkflowDefinition::WorkflowDefinition(const std::string &defName, int ver)
     : version(ver),
       name(defName),
       root(nullptr),
-      participants(),
-      nextInstanceId(1) {}
+      participants() {}
 
 WorkflowDefinition::~WorkflowDefinition()
 {
-    // MEMORY LEAK
-    // delete the root task tree (this will recursively delete all Tasks and Subprocesses)
-    if (root != nullptr)
-    {
-        delete root;
-        root = nullptr;
-    }
+    // Deleting the root recursively deletes every Subprocess and Task below it.
+    delete root;
+    root = nullptr;
 
-    // delete all registered participants (Departments and Employees)
+    // Deleting a Department also deletes the Employees inside it.
     for (Participant *p : participants)
     {
         delete p;
@@ -41,27 +29,16 @@ WorkflowDefinition::~WorkflowDefinition()
     participants.clear();
 }
 
-std::unique_ptr<WorkflowInstance> WorkflowDefinition::instantiate()
+std::unique_ptr<WorkflowInstance> WorkflowDefinition::instantiate(int instanceId)
 {
-    WorkflowComponent *clonedRoot = nullptr;
+    // Prototype: clone the whole task tree so the instance is isolated.
+    WorkflowComponent *clonedRoot = (root != nullptr) ? root->clone() : nullptr;
 
-    if (root != nullptr)
-    {
-        clonedRoot = root->clone();
-    }
-
-    int assignedId = nextInstanceId++;
-    std::cout << "[WorkflowDefinition] Instantiating new WorkflowInstance #"
-              << assignedId << " from blueprint '" << name
-              << "' (v" << version << ")." << std::endl;
+    TLOG("[WorkflowDefinition] Instantiating #" << instanceId
+                                                << " from blueprint '" << name << "' (v" << version << ")");
 
     return std::unique_ptr<WorkflowInstance>(
-        new WorkflowInstance(assignedId, name, version, clonedRoot, nullptr));
-}
-
-void WorkflowDefinition::setVersion(int ver)
-{
-    version = ver;
+        new WorkflowInstance(instanceId, name, version, clonedRoot, nullptr));
 }
 
 int WorkflowDefinition::getVersion() const
@@ -69,19 +46,18 @@ int WorkflowDefinition::getVersion() const
     return version;
 }
 
-void WorkflowDefinition::setName(const std::string &defName)
-{
-    name = defName;
-}
-
-std::string WorkflowDefinition::getName() const
+const std::string &WorkflowDefinition::getName() const
 {
     return name;
 }
 
 void WorkflowDefinition::setRoot(WorkflowComponent *rootComponent)
 {
-    root = rootComponent;
+    if (root != rootComponent)
+    {
+        delete root; // avoid leaking the old root
+        root = rootComponent;
+    }
 }
 
 WorkflowComponent *WorkflowDefinition::getRoot() const
