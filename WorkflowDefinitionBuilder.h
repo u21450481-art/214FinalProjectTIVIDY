@@ -1,74 +1,38 @@
-/**
- * @file WorkflowDefinitionBuilder.h
- * @brief Abstract Builder interface for constructing WorkflowDefinition objects.
- *
- * ============================================================================
- * DESIGN ROLE & PATTERN PARTICIPATION:
- * - GoF Pattern: Builder Pattern (Participant: Builder)
- * - Role Explanation:
- *   Declares the abstract step-by-step interface (reset, buildParticipants,
- *   buildTaskTree, getResult) for creating parts of a WorkflowDefinition
- *   Product. This allows the Director and WorkflowEngine (Facade) to construct
- *   complex workflow blueprints for different industries (e.g., Retail
- *   Onboarding vs. Healthcare/IT) using the exact same construction process.
- * ============================================================================
- */
-
 #ifndef WORKFLOWDEFINITIONBUILDER_H
 #define WORKFLOWDEFINITIONBUILDER_H
 
+#include <string>
 #include "WorkflowDefinition.h"
 
-// Forward declarations for components used during building
-class WorkflowComponent;
-class Task;
-class Subprocess;
-class Participant;
-class Employee;
-class Department;
-
 /**
- * @class WorkflowDefinitionBuilder
- * @brief Abstract Builder defining the interface for assembling a WorkflowDefinition.
+ * @brief Abstract Builder (GoF: Builder).
+ * Declares the construction steps. The Director calls only these, so any
+ * concrete builder can be swapped in without changing the Director or Facade.
  */
-class WorkflowDefinitionBuilder {
+class WorkflowDefinitionBuilder
+{
 protected:
-    /** @brief Pointer to the WorkflowDefinition product currently under construction. */
-    WorkflowDefinition* definition;
+    WorkflowDefinition *definition; // product under construction (owned until getResult)
 
 public:
-    /**
-     * @brief Default constructor initializing the internal definition pointer to nullptr.
-     */
     WorkflowDefinitionBuilder();
-
-    /**
-     * @brief Virtual destructor.
-     */
     virtual ~WorkflowDefinitionBuilder();
 
-    /**
-     * @brief Allocates a fresh WorkflowDefinition product to begin a new build.
-     */
-    virtual void reset();
+    // Owns a raw pointer, so copying would double-delete.
+    WorkflowDefinitionBuilder(const WorkflowDefinitionBuilder &) = delete;
+    WorkflowDefinitionBuilder &operator=(const WorkflowDefinitionBuilder &) = delete;
 
-    /**
-     * @brief Pure virtual step to construct the Participant hierarchy (Employees & Departments).
-     */
-    virtual void buildParticipants() = 0;
+    // The construction steps (replace the old data-less buildParticipants/buildTaskTree).
+    virtual void reset(const std::string &name, int version) = 0;
+    virtual void addDepartment(const std::string &deptName) = 0;
+    virtual void addEmployee(const std::string &empName, const std::string &deptName) = 0;
+    virtual void addSubprocess(const std::string &subName, const std::string &parentName) = 0;
+    virtual void addTask(const std::string &taskName, const std::string &parentName,
+                         int priority, const std::string &branchCondition,
+                         const std::string &deadline) = 0;
 
-    /**
-     * @brief Pure virtual step to construct the Composite WorkflowComponent tree (Tasks & Subprocesses).
-     */
-    virtual void buildTaskTree() = 0;
-
-    /**
-     * @brief Extracts and hands over ownership of the constructed WorkflowDefinition product.
-     * Resets the internal pointer to nullptr so the builder does not accidentally
-     * delete or mutate the finished product later.
-     * @return Pointer to the finished WorkflowDefinition.
-     */
-    virtual WorkflowDefinition* getResult();
+    /** Hands over ownership of the finished product; the builder keeps nothing. */
+    virtual WorkflowDefinition *getResult();
 };
 
-#endif // WORKFLOWDEFINITIONBUILDER_H
+#endif

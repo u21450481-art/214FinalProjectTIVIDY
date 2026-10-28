@@ -16,21 +16,12 @@ WorkflowDefinitionBuilder::WorkflowDefinitionBuilder() : definition(nullptr) {}
 
 WorkflowDefinitionBuilder::~WorkflowDefinitionBuilder()
 {
-    // Only delete if a partial build was abandoned before getResult() was called
-    delete definition;
-    definition = nullptr;
-}
-
-void WorkflowDefinitionBuilder::reset()
-{
-    delete definition;
-    definition = new WorkflowDefinition();
+    delete definition; // only non-null if a build was abandoned
 }
 
 WorkflowDefinition *WorkflowDefinitionBuilder::getResult()
 {
     WorkflowDefinition *result = definition;
-    // detach ownership so the product survives the Builder
-    definition = nullptr;
+    definition = nullptr; // ownership leaves the builder
     return result;
 }

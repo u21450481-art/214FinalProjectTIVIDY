@@ -2,17 +2,33 @@
 
 #include <iostream>
 
+#include "Task.h"
+#include "DataPayload.h"
+#include "StartCommand.h"
+#include "CompleteCommand.h"
+#include "RejectCommand.h"
+#include "CancelCommand.h"
+#include "AssignTaskCommand.h"
+#include "RecordDecisionCommand.h"
+#include "SetDataCommand.h"
+#include "MacroCommand.h"
+#include "StandardKeys.h"
+
 EngineMediator::EngineMediator()
-    : root(nullptr), finished(false), halted(false), haltedAt(nullptr) {
-    handlers[WorkflowEvent::Started]   = &EngineMediator::onStarted;
-    handlers[WorkflowEvent::Finished]  = &EngineMediator::onFinished;
-    handlers[WorkflowEvent::Failed]    = &EngineMediator::onHalt;
-    handlers[WorkflowEvent::Rejected]  = &EngineMediator::onHalt;
-    handlers[WorkflowEvent::Cancelled] = &EngineMediator::onHalt;
-    handlers[WorkflowEvent::Escalated] = &EngineMediator::onEscalated;
+    : root(nullptr), strategy(nullptr), adapter(nullptr), finished(false), halted(false), haltedAt(nullptr) {
+    for (int i = 0; i < 6; i++) handlers[i] = nullptr;
+    handlers[static_cast<int>(WorkflowEvent::Started)]   = &EngineMediator::onStarted;
+    handlers[static_cast<int>(WorkflowEvent::Finished)]  = &EngineMediator::onFinished;
+    handlers[static_cast<int>(WorkflowEvent::Failed)]    = &EngineMediator::onHalt;
+    handlers[static_cast<int>(WorkflowEvent::Rejected)]  = &EngineMediator::onHalt;
+    handlers[static_cast<int>(WorkflowEvent::Cancelled)] = &EngineMediator::onHalt;
+    handlers[static_cast<int>(WorkflowEvent::Escalated)] = &EngineMediator::onEscalated;
 }
 
-EngineMediator::~EngineMediator() {}
+EngineMediator::~EngineMediator() {
+    delete strategy;
+    delete adapter;
+}
 
 //=================Setup====================
 void EngineMediator::registerTree(WorkflowComponent* c) {
@@ -30,8 +46,14 @@ void EngineMediator::setRoot(WorkflowComponent* r) {
     registerTree(root);
 }
 
-void EngineMediator::setStrategy(std::unique_ptr<AssignmentStrategy> s) {
-    strategy = std::move(s);
+void EngineMediator::setStrategy(AssignmentStrategy* s) {
+    delete strategy;
+    strategy = s;
+}
+
+void EngineMediator::setDataAdapter(DataAdapter* a) {
+    delete adapter;
+    adapter = a;
 }
 
 void EngineMediator::flatten(Participant* p, std::vector<Participant*>& out) {
@@ -50,7 +72,12 @@ void EngineMediator::setCandidates(const std::vector<Participant*>& people) {
 }
 
 void EngineMediator::setExecutionMode(WorkflowComponent* composite, ExecutionMode m) {
-    if (composite) modes[composite] = m;
+    if (!composite) return;
+    for (int i = 0; i < (int)modeKeys.size(); i++) {
+        if (modeKeys[i] == composite) { modeValues[i] = m; return; }
+    }
+    modeKeys.push_back(composite);
+    modeValues.push_back(m);
 }
 
 //=================Running====================
@@ -69,8 +96,84 @@ void EngineMediator::startWorkflow() {
 void EngineMediator::notify(WorkflowComponent* sender, WorkflowEvent event) {
     if (!sender) return;
     std::cout << "[Mediator] Event received: " << toString(event) << "\n";
-    auto it = handlers.find(event);
-    if (it != handlers.end()) (this->*(it->second))(sender);
+    Handler h = handlers[static_cast<int>(event)];
+    if (h) (this->*h)(sender);
+}
+
+//=================Actions (every one runs a command)====================
+//runs the command through the history. Only if it worked does the mediator raise the event,
+//so the mediator reacts AFTER the change is recorded (history order stays correct for undo).
+bool EngineMediator::runAndNotify(Command* cmd, WorkflowComponent* sender, WorkflowEvent event) {
+    if (!history.run(cmd)) {
+        std::cout << "[Mediator] Action refused, nothing changed.\n";
+        return false;
+    }
+    notify(sender, event);
+    return true;
+}
+
+bool EngineMediator::startTask(WorkflowComponent* c) {
+    return runAndNotify(new StartCommand(c), c, WorkflowEvent::Started);
+}
+
+bool EngineMediator::completeTask(WorkflowComponent* c) {
+    return runAndNotify(new CompleteCommand(c), c, WorkflowEvent::Finished);
+}
+
+bool EngineMediator::rejectTask(WorkflowComponent* c) {
+    return runAndNotify(new RejectCommand(c), c, WorkflowEvent::Rejected);
+}
+
+bool EngineMediator::cancelTask(WorkflowComponent* c) {
+    return runAndNotify(new CancelCommand(c), c, WorkflowEvent::Cancelled);
+}
+
+bool EngineMediator::recordDecision(Task* t, const std::string& outcome) {
+    return history.run(new RecordDecisionCommand(t, outcome));
+}
+
+bool EngineMediator::setData(DataPayload* data, const std::string& key, const std::string& value) {
+    return history.run(new SetDataCommand(data, key, value));
+}
+
+//asks the adapter for the record, then writes each standard key it filled in with a SetDataCommand.
+//The commands are grouped in one MacroCommand: one history entry, one undo, all or nothing.
+//Returns false (and changes nothing) if there is no adapter, no data, or the record does not exist.
+bool EngineMediator::importData(const std::string& id, DataPayload* data) {
+    if (!adapter || !data) {
+        std::cout << "[Mediator] No data adapter or no data to fill; nothing imported.\n";
+        return false;
+    }
+
+    DataPayload fetched; // the adapter fills this temporary copy first
+    if (!adapter->adapt(id, fetched)) {
+        std::cout << "[Mediator] Import failed: no record '" << id << "'.\n";
+        return false;
+    }
+
+    MacroCommand* macro = new MacroCommand("Import " + id);
+    for (int i = 0; i < StandardKeys::KEY_COUNT; i++) {
+        const std::string& key = StandardKeys::ALL_KEYS[i];
+        if (fetched.has(key)) macro->add(new SetDataCommand(data, key, fetched.get(key)));
+    }
+    return history.run(macro);
+}
+
+//undo and redo only change objects, so the mediator's own flags are worked out again afterwards
+bool EngineMediator::undo() {
+    if (!history.undo()) return false;
+    refreshStatus();
+    return true;
+}
+
+bool EngineMediator::redo() {
+    if (!history.redo()) return false;
+    refreshStatus();
+    return true;
+}
+
+std::vector<std::string> EngineMediator::getHistory() const {
+    return history.getHistory();
 }
 
 //=================Event handlers====================
@@ -89,7 +192,7 @@ void EngineMediator::onFinished(WorkflowComponent* sender) {
         return; // not part of our tree: ignore
     }
 
-    if (modeOf(parent) == ExecutionMode::Sequential) {
+    if (modeOf(parent) == ExecutionMode::Sequential && !halted) {
         WorkflowComponent* next = findNextReady(parent);
         if (next) {
             startComponent(next);
@@ -99,9 +202,9 @@ void EngineMediator::onFinished(WorkflowComponent* sender) {
 
     // Parallel, or nothing left to start: is the whole group done?
     if (isDone(parent)) {
-        // Ask the parent's own state machine to complete; it refuses if it is not InProgress.
-        if (stateIs(parent, "InProgress")) parent->complete();
-        onFinished(parent); // a finished group may finish ITS parent
+        // Ask the parent's own state machine to complete (as a command); it refuses if it is not InProgress.
+        // completeTask raises Finished for the parent, so a finished group may finish ITS parent.
+        if (stateIs(parent, "InProgress")) completeTask(parent);
     }
 }
 
@@ -134,8 +237,16 @@ void EngineMediator::assign(WorkflowComponent* c) {
         std::cout << "[Mediator] No assignment strategy set; skipping assignment.\n";
         return;
     }
+    Task* task = dynamic_cast<Task*>(c);  // only single tasks are given to a person, groups are not
+    if (!task) return;
+
+    Participant* chosen = strategy->assign(task, candidates);
+    if (!chosen) {
+        std::cout << "[Mediator] The " << strategy->getName() << " strategy found nobody.\n";
+        return;
+    }
     std::cout << "[Mediator] Assigning using " << strategy->getName() << " strategy.\n";
-    c->requestAssignment(*strategy, candidates);
+    history.run(new AssignTaskCommand(task, chosen));
 }
 
 void EngineMediator::startComponent(WorkflowComponent* c) {
@@ -143,11 +254,11 @@ void EngineMediator::startComponent(WorkflowComponent* c) {
 
     if (kids.empty()) { // a single piece of work
         assign(c);
-        c->execute();
+        if (startTask(c)) c->execute();
         return;
     }
 
-    c->start(); // the group itself begins its lifecycle
+    startTask(c); // the group itself begins its lifecycle
     if (modeOf(c) == ExecutionMode::Parallel) {
         for (auto* k : kids)
             if (stateIs(k, "NotStarted")) startComponent(k);
@@ -179,12 +290,33 @@ bool EngineMediator::isDone(WorkflowComponent* c) const {
 }
 
 ExecutionMode EngineMediator::modeOf(const WorkflowComponent* c) const {
-    auto it = modes.find(c);
-    return it == modes.end() ? ExecutionMode::Sequential : it->second;
+    for (int i = 0; i < (int)modeKeys.size(); i++) {
+        if (modeKeys[i] == c) return modeValues[i];
+    }
+    return ExecutionMode::Sequential;
 }
 
 // Stage has no "isComplete()" query yet, so we compare state names, as
 // Subprocess::allChildrenComplete already does. Replace if Stage gains one.
 bool EngineMediator::stateIs(WorkflowComponent* c, const char* name) {
     return c->getState()->getName() == name;
+}
+
+//finds the first component that is Rejected or Cancelled, or null if there is none
+WorkflowComponent* EngineMediator::findHalted(WorkflowComponent* node) const {
+    if (!node) return nullptr;
+    if (stateIs(node, "Rejected") || stateIs(node, "Cancelled")) return node;
+    std::vector<WorkflowComponent*> kids = node->getChildren();
+    for (auto* k : kids) {
+        WorkflowComponent* h = findHalted(k);
+        if (h) return h;
+    }
+    return nullptr;
+}
+
+//after an undo or redo, work out finished/halted again from the real states
+void EngineMediator::refreshStatus() {
+    haltedAt = findHalted(root);
+    halted = (haltedAt != nullptr);
+    finished = (root != nullptr && stateIs(root, "Complete"));
 }

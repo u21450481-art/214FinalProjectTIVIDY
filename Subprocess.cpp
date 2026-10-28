@@ -1,7 +1,12 @@
 #include "Subprocess.h"
 #include <algorithm>
 
-Subprocess::Subprocess(std::string processName) : name(processName) {} // added name to integrate with builder
+Subprocess::Subprocess(std::string n) : name(n) {}
+
+std::string Subprocess::getName()
+{
+    return name;
+}
 
 Subprocess::~Subprocess()
 {
@@ -20,7 +25,7 @@ void Subprocess::remove(WorkflowComponent *c)
     children.erase(std::remove(children.begin(), children.end(), c), children.end());
 }
 
-vector<WorkflowComponent *> Subprocess::getChildren()
+std::vector<WorkflowComponent *> Subprocess::getChildren()
 {
     return children;
 }
@@ -39,16 +44,11 @@ bool Subprocess::allChildrenComplete()
     return true;
 }
 
-// FOR PROTOTYPE
+// Subprocess.cpp
 WorkflowComponent *Subprocess::clone() const
 {
-    Subprocess *copy = new Subprocess();
-
-    // Loop through the vector and clone every child
+    Subprocess *copy = new Subprocess(name); // keep the name
     for (WorkflowComponent *child : children)
-    {
-        copy->add(child->clone());
-    }
-
+        copy->add(child->clone()); // recursion clones the whole subtree
     return copy;
 }

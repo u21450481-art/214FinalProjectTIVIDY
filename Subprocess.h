@@ -1,8 +1,9 @@
 #ifndef SUBPROCESS_H
 #define SUBPROCESS_H
 
-#include <memory>
+#include <string>
 #include <vector>
+#include <memory>
 
 #include "WorkflowComponent.h"
 #include "Task.h"
@@ -11,20 +12,21 @@ using namespace std;
 
 class Subprocess : public WorkflowComponent
 {
-    vector<WorkflowComponent *> children;
-    std::string name; // added this to integrate with builder
+    std::vector<WorkflowComponent *> children;
+    std::string name;
 
 public:
-    Subprocess(std::string processName = "Unnamed_Subprocess"); // added name
+    Subprocess(std::string name = "Subprocess");
     ~Subprocess();
     void execute();
+    std::string getName();
     void add(WorkflowComponent *c) override;
     void remove(WorkflowComponent *c) override;
-    vector<WorkflowComponent *> getChildren() override;
+    std::vector<WorkflowComponent *> getChildren() override;
     bool allChildrenComplete();
 
     // PROTOTYPE
-    virtual WorkflowComponent *clone() const override;
+    WorkflowComponent *clone() const override;
 };
 
 #endif

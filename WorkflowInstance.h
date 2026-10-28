@@ -1,17 +1,16 @@
 /**
  * @file WorkflowInstance.h
- * @brief Active runtime execution instance spawned from a WorkflowDefinition.
+ * @brief One independent run of a WorkflowDefinition.
  *
  * ============================================================================
  * DESIGN ROLE & PATTERN PARTICIPATION:
- * - Role: Active Runtime Instance (Spawned by Builder Product / WorkflowDefinition)
+ * - Role: Active runtime instance, created by WorkflowDefinition::instantiate()
  * - Pattern Connections:
- *   1. Builder / Prototype: Created when WorkflowDefinition::instantiate() clones
- *      the static template's task tree into an isolated running instance.
- *   2. Composition Owner of DataPayload: Holds a dedicated DataPayload object
- *      so concurrent workflow instances never overwrite each other's data.
- *   3. Mediator Context: Connects the active root WorkflowComponent tree to the
- *      WorkflowOrchestrator (EngineMediator) for runtime event routing.
+ *   1. Prototype: owns the cloned copy of the blueprint's task tree.
+ *   2. Composition: owns a private DataPayload, so concurrent instances
+ *      never overwrite each other's data.
+ *   3. Mediator context: holds a non-owning pointer to the mediator that
+ *      coordinates this instance's components.
  * ============================================================================
  */
 
@@ -19,88 +18,127 @@
 #define WORKFLOWINSTANCE_H
 
 #include <string>
+
 #include "DataPayload.h"
 
-// Forward declarations of classes from other patterns
-class WorkflowComponent;     // Composite Pattern (Component)
-class WorkflowOrchestrator;  // Mediator Pattern (Mediator interface)
-class EngineMediator;        // Mediator Pattern (ConcreteMediator)
-class Participant;           // Composite Pattern (Participant tree)
+class WorkflowComponent;    ///< Composite pattern (Component)
+class WorkflowOrchestrator; ///< Mediator pattern (Mediator interface)
 
 /**
  * @class WorkflowInstance
- * @brief Represents one independent execution of a workflow definition with its own data and state.
+ * @brief One execution of a blueprint, with its own task tree, data and ID.
+ *
+ * Ownership: the instance owns its task tree and payload. It does NOT own
+ * the mediator. It cannot be copied.
  */
-class WorkflowInstance {
+class WorkflowInstance
+{
 private:
-    /** @brief Pointer to the cloned root of the active WorkflowComponent tree. */
-    WorkflowComponent* root;
+    /** @brief Root of this instance's cloned task tree (owned). */
+    WorkflowComponent *root;
 
-    /** @brief Unique identifier for this running workflow instance. */
+    /** @brief Unique ID of this instance. */
     int id;
 
-    /** @brief Name of the workflow definition template this instance was spawned from. */
+    /** @brief Name of the blueprint this instance was spawned from. */
     std::string definitionName;
 
-    /** @brief Pointer to the mediator coordinating task execution and routing. */
-    WorkflowOrchestrator* mediator;
+    /** @brief Mediator coordinating this instance (not owned, may be null). */
+    WorkflowOrchestrator *mediator;
 
-    /** @brief Version number of the WorkflowDefinition used to spawn this instance. */
+    /** @brief Version of the blueprint this instance was spawned from. */
     int definitionVersion;
 
-    /** @brief Composed runtime data payload unique to this workflow instance. */
+    /** @brief Runtime data unique to this instance. */
     DataPayload payload;
 
 public:
     /**
-     * @brief Constructs a new WorkflowInstance.
+     * @brief Constructs an instance.
      * @param instanceId Unique ID for this run.
-     * @param defName Name of the source WorkflowDefinition.
-     * @param defVersion Version of the source WorkflowDefinition.
-     * @param clonedRoot Root pointer of the cloned WorkflowComponent composite tree.
-     * @param orchestrator Pointer to the mediator managing this instance (optional at init).
+     * @param defName Name of the source blueprint.
+     * @param defVersion Version of the source blueprint.
+     * @param clonedRoot Root of the cloned task tree; the instance takes ownership.
+     * @param orchestrator Mediator for this instance (optional, not owned).
      */
     WorkflowInstance(int instanceId,
-                     const std::string& defName,
+                     const std::string &defName,
                      int defVersion,
-                     WorkflowComponent* clonedRoot = nullptr,
-                     WorkflowOrchestrator* orchestrator = nullptr);
+                     WorkflowComponent *clonedRoot = nullptr,
+                     WorkflowOrchestrator *orchestrator = nullptr);
 
     /**
-     * @brief Destructor. Cleans up the cloned task tree owned by this instance.
+     * @brief Destroys the instance, deleting its task tree.
+     * The mediator is not deleted.
      */
     ~WorkflowInstance();
 
+    /** @brief Copying is disabled: the instance owns a raw task tree. */
+    WorkflowInstance(const WorkflowInstance &) = delete;
+
+    /** @brief Copy assignment is disabled: the instance owns a raw task tree. */
+    WorkflowInstance &operator=(const WorkflowInstance &) = delete;
+
     /**
-     * @brief Starts execution of the workflow instance from the root component.
+     * @brief Starts the root component directly.
+     * @note This bypasses the mediator and the command history. Use
+     *       EngineMediator::startWorkflow() for normal execution.
      */
     void start();
 
     /**
-     * @brief Stops/halts execution of the workflow instance.
+     * @brief Cancels the root component directly.
+     * @note This bypasses the mediator and the command history.
      */
     void stop();
 
     /**
-     * @brief Provides mutable access to the instance's DataPayload.
-     * @return Reference to the composed DataPayload.
+     * @brief Gets mutable access to this instance's payload.
+     * @return Reference to the payload.
      */
-    DataPayload& getPayload();
+    DataPayload &getPayload();
 
     /**
-     * @brief Provides read-only access to the instance's DataPayload.
-     * @return Const reference to the composed DataPayload.
+     * @brief Gets read-only access to this instance's payload.
+     * @return Const reference to the payload.
      */
-    const DataPayload& getPayload() const;
+    const DataPayload &getPayload() const;
 
-    // --- Getters & Setters for Engine & Mediator coordination ---
+    /**
+     * @brief Gets the instance ID.
+     * @return The unique ID.
+     */
     int getId() const;
-    std::string getDefinitionName() const;
+
+    /**
+     * @brief Gets the name of the source blueprint.
+     * @return The blueprint name.
+     */
+    const std::string &getDefinitionName() const;
+
+    /**
+     * @brief Gets the version of the source blueprint.
+     * @return The blueprint version.
+     */
     int getDefinitionVersion() const;
-    WorkflowComponent* getRoot() const;
-    void setRoot(WorkflowComponent* newRoot);
-    WorkflowOrchestrator* getMediator() const;
-    void setMediator(WorkflowOrchestrator* newMediator);
+
+    /**
+     * @brief Gets the root of this instance's task tree.
+     * @return Non-owning pointer, or nullptr if there is no tree.
+     */
+    WorkflowComponent *getRoot() const;
+
+    /**
+     * @brief Gets the mediator coordinating this instance.
+     * @return Non-owning pointer, or nullptr if none is attached.
+     */
+    WorkflowOrchestrator *getMediator() const;
+
+    /**
+     * @brief Attaches a mediator to this instance.
+     * @param newMediator The mediator (not owned; it must outlive this instance's use of it).
+     */
+    void setMediator(WorkflowOrchestrator *newMediator);
 };
 
 #endif // WORKFLOWINSTANCE_H

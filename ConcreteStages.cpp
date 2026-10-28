@@ -2,65 +2,78 @@
 #include "WorkflowComponent.h"
 #include <iostream>
 
-//(WorkflowComponent provdes c->setState(Stage* s) thats why i commented  it out for now)
-
 //================NotStarted=========================
-void NotStarted::handleExecute(WorkflowComponent *c)
-{
-    std::cout << "[Stage: NotStarted] Initiating execution...\n";
-    this->start(c);
+Stage* NotStarted::instance(){
+    static NotStarted theOne;
+    return &theOne;
 }
 
-void NotStarted::start(WorkflowComponent *c)
-{
+//no longer starts itself: starting must go through StartCommand so it is recorded in the history
+void NotStarted::handleExecute(WorkflowComponent* c){
+    std::cout << "[Stage: NotStarted] Not started yet. Start it first.\n";
+}
+
+void NotStarted::start(WorkflowComponent* c){
     std::cout << "[Stage Transition] NotStarted -> InProgress\n";
-    c->setState(new InProgress());
+    c->setState(InProgress::instance());
 }
 
-void NotStarted::cancel(WorkflowComponent *c)
-{
+void NotStarted::cancel(WorkflowComponent* c){
     std::cout << "[Stage Transition] NotStarted -> Cancelled\n";
-    c->setState(new Cancelled());
+    c->setState(Cancelled::instance());
 }
 
 //=================InProgress====================
-void InProgress::handleExecute(WorkflowComponent *c)
-{
-    std::cout << "[Stage: InProgress] Performin component work...\n";
+Stage* InProgress::instance(){
+    static InProgress theOne;
+    return &theOne;
 }
 
-void InProgress::complete(WorkflowComponent *c)
-{
+void InProgress::handleExecute(WorkflowComponent* c){
+    std::cout << "[Stage: InProgress] Performing component work...\n";
+}
+
+void InProgress::complete(WorkflowComponent* c){
     std::cout << "[Stage Transition] InProgress -> Complete\n";
-    c->setState(new Complete());
+    c->setState(Complete::instance());
 }
 
-void InProgress::reject(WorkflowComponent *c)
-{
+void InProgress::reject(WorkflowComponent* c){
     std::cout << "[Stage Transition] InProgress -> Rejected\n";
-    c->setState(new Rejected());
+    c->setState(Rejected::instance());
 }
 
-void InProgress::cancel(WorkflowComponent *c)
-{
+void InProgress::cancel(WorkflowComponent* c){
     std::cout << "[Stage Transition] InProgress -> Cancelled\n";
-    c->setState(new Cancelled());
+    c->setState(Cancelled::instance());
 }
 
 //=================Complete====================
-void Complete::handleExecute(WorkflowComponent *c)
-{
+Stage* Complete::instance(){
+    static Complete theOne;
+    return &theOne;
+}
+
+void Complete::handleExecute(WorkflowComponent* c){
     std::cout << "[Stage: Complete] Component is already Complete. Execution blocked\n";
 }
 
 //=================Rejected====================
-void Rejected::handleExecute(WorkflowComponent *c)
-{
+Stage* Rejected::instance(){
+    static Rejected theOne;
+    return &theOne;
+}
+
+void Rejected::handleExecute(WorkflowComponent* c){
     std::cout << "[Stage: Rejected] Component was Rejected. Execution blocked.\n";
 }
 
 //=================Cancelled====================
-void Cancelled::handleExecute(WorkflowComponent *c)
-{
+Stage* Cancelled::instance(){
+    static Cancelled theOne;
+    return &theOne;
+}
+
+void Cancelled::handleExecute(WorkflowComponent* c){
     std::cout << "[Stage: Cancelled] Component was Cancelled. Execution blocked.\n";
 }

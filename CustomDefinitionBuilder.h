@@ -38,37 +38,35 @@ private:
     /** @brief Lookup table of Departments by name so Employees can be added to them. */
     std::map<std::string, Department *> departmentRegistry;
 
+    void requireBuild() const; // throws if reset() hasn't been called
+
 public:
-    CustomDefinitionBuilder();
-    virtual ~CustomDefinitionBuilder();
+    CustomDefinitionBuilder() = default;
+    ~CustomDefinitionBuilder() override = default;
 
-    // --- Standard GoF Builder Interface ---
     virtual void reset() override;
-    virtual void buildParticipants() override;
-    virtual void buildTaskTree() override;
-    virtual WorkflowDefinition *getResult() override;
 
-    // --- Parameterized Step Methods (Called by the Facade / TUI) ---
+    // Parameterized Step Methods-
 
     /**
      * @brief Starts a fresh custom blueprint with a specific name and version.
      */
-    void reset(const std::string &workflowName, int version = 1);
+    void reset(const std::string &workflowName, int version = 1) override;
 
     /**
      * @brief Adds a Department composite participant to the blueprint.
      */
-    void addDepartment(const std::string &deptName);
+    void addDepartment(const std::string &deptName) override;
 
     /**
      * @brief Adds an Employee leaf participant (optionally inside a Department).
      */
-    void addEmployee(const std::string &empName, const std::string &deptName = "");
+    void addEmployee(const std::string &empName, const std::string &deptName = "") override;
 
     /**
      * @brief Adds a composite Subprocess container under a parent Subprocess (or Root if empty).
      */
-    void addSubprocess(const std::string &subprocessName, const std::string &parentSubprocess = "");
+    void addSubprocess(const std::string &subprocessName, const std::string &parentSubprocess = "") override;
 
     /**
      * @brief Adds a leaf Task under a parent Subprocess (or Root if empty).
@@ -77,9 +75,9 @@ public:
      * @param priority Task priority level.
      * @param branchCondition Optional DataPayload key=value condition for branching.
      */
-    void addTask(const std::string &taskName,
-                 const std::string &parentSubprocess = "",
-                 int priority = 1, std::string deadline = "", const std::string &branchCondition = "");
+    void addTask(const std::string &taskName, const std::string &parentName = "",
+                 int priority = 1, const std::string &branchCondition = "",
+                 const std::string &deadline = "") override;
 };
 
 #endif // CUSTOMDEFINITIONBUILDER_H

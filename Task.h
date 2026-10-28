@@ -12,6 +12,9 @@ class Task : public WorkflowComponent
     std::string taskName;
     int priority;
     std::string deadline;
+    std::string outcome; // the decision stored on the task, for example "approved"
+
+    std::string branchCondition;
 
 public:
     Task(int priority, std::string deadline, std::string name);
@@ -19,9 +22,14 @@ public:
     std::string getName();
     void execute();
     void setAssignee(Participant *p);
+    Participant *getAssignee();
+    void setOutcome(const std::string &o);
+    std::string getOutcome();
 
-    // PROTOTYPE
-    virtual WorkflowComponent *clone() const override;
+    // added for builder
+    void setBranchCondition(const std::string &c);
+    std::string getBranchCondition() const;
+    WorkflowComponent *clone() const override;
 };
 
 #endif
