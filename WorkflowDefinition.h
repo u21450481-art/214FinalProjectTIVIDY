@@ -1,130 +1,132 @@
 /**
  * @file WorkflowDefinition.h
- * @brief Master blueprint constructed by the Builder pattern.
+ * @brief Master blueprint assembled by the Builder pattern.
  *
  * ============================================================================
  * DESIGN ROLE & PATTERN PARTICIPATION:
  * - GoF Pattern: Builder Pattern (Participant: Product)
- * - Secondary Pattern Role: Prototype Spawner (via instantiate())
+ * - Secondary Pattern Role: Prototype client (via instantiate())
  * - Role Explanation:
- *   WorkflowDefinition is the complex object (Product) assembled step-by-step
- *   by the WorkflowDefinitionBuilder hierarchy. It represents a reusable,
- *   static master blueprint containing the root of the task tree, registered
- *   participants, and version metadata. Calling instantiate() clones the
- *   blueprint's task tree into a brand-new, independent WorkflowInstance so
- *   executing a workflow never mutates or corrupts the master blueprint.
+ *   WorkflowDefinition is the complex object (Product) assembled step by step
+ *   by a WorkflowDefinitionBuilder. It is a reusable, static blueprint holding
+ *   the root of the task tree, the registered participants and version
+ *   metadata. instantiate() clones the task tree into a new, independent
+ *   WorkflowInstance, so running a workflow never changes the blueprint.
  * ============================================================================
  */
 
 #ifndef WORKFLOWDEFINITION_H
 #define WORKFLOWDEFINITION_H
 
+#include <memory>
 #include <string>
 #include <vector>
-#include <memory>
+
 #include "WorkflowInstance.h"
 
-// Forward declarations for other pattern classes
-class WorkflowComponent;     // Composite Pattern (Task/Subprocess tree)
-class Participant;           // Composite Pattern (Employee/Department tree)
-class WorkflowOrchestrator;  // Mediator Pattern
+class WorkflowComponent; ///< Composite pattern: Task/Subprocess tree
+class Participant;       ///< Composite pattern: Employee/Department tree
 
 /**
  * @class WorkflowDefinition
- * @brief Represents the static master template of a workflow built by a ConcreteBuilder.
+ * @brief The static master template of a workflow, built by a ConcreteBuilder.
+ *
+ * Ownership: the definition owns its root task tree and all top-level
+ * participants and deletes them in its destructor. It cannot be copied,
+ * because a copy would delete the same objects twice.
  */
-class WorkflowDefinition {
+class WorkflowDefinition
+{
 private:
-    /** @brief Version number of this workflow blueprint. */
+    /** @brief Version number of this blueprint. */
     int version;
 
-    /** @brief Human-readable name of this workflow definition (e.g., "Retail_Onboarding"). */
+    /** @brief Human-readable blueprint name, e.g. "Retail_Return_Item". */
     std::string name;
 
-    /**
-     * @brief Pointer to the root of the master Composite task tree.
-     * Note: Stored as a raw pointer in the skeleton so it compiles with forward
-     * declarations before WorkflowComponent.h is created; can be wrapped in
-     * std::unique_ptr<WorkflowComponent> once WorkflowComponent.h is included.
-     */
-    WorkflowComponent* root;
+    /** @brief Root of the master task tree (owned). */
+    WorkflowComponent *root;
 
-    /** @brief Collection of participants/departments built for this workflow definition. */
-    std::vector<Participant*> participants;
-
-    /** @brief Counter used to generate unique IDs for spawned WorkflowInstances. */
-    int nextInstanceId;
+    /** @brief Top-level participants (owned). Employees inside a Department are owned by that Department. */
+    std::vector<Participant *> participants;
 
 public:
     /**
-     * @brief Constructs an empty WorkflowDefinition product.
+     * @brief Constructs an empty blueprint.
      * @param defName Name of the workflow definition.
      * @param ver Version number (defaults to 1).
      */
-    WorkflowDefinition(const std::string& defName = "Unnamed_Workflow", int ver = 1);
+    explicit WorkflowDefinition(const std::string &defName = "Unnamed_Workflow", int ver = 1);
 
     /**
-     * @brief Destructor. Cleans up the master blueprint's root task tree.
+     * @brief Destroys the blueprint, deleting the task tree and all top-level participants.
      */
     ~WorkflowDefinition();
 
+    /** @brief Copying is disabled: the definition owns raw pointers. */
+    WorkflowDefinition(const WorkflowDefinition &) = delete;
+
+    /** @brief Copy assignment is disabled: the definition owns raw pointers. */
+    WorkflowDefinition &operator=(const WorkflowDefinition &) = delete;
+
     /**
-     * @brief Spawns a fresh, independent WorkflowInstance from this master blueprint.
-     * Uses the Prototype pattern (WorkflowComponent::clone()) on the root task tree
-     * so changes in the running instance never affect this definition or other instances.
-     * @return std::unique_ptr<WorkflowInstance> owning the newly created instance.
+     * @brief Spawns a fresh, independent WorkflowInstance from this blueprint.
+     *
+     * Uses the Prototype pattern: the root task tree is cloned with
+     * WorkflowComponent::clone(), so changes to the instance never affect
+     * this blueprint or other instances.
+     *
+     * @param instanceId Unique ID chosen by the caller (the WorkflowEngine).
+     * @return The new instance, which owns its cloned task tree.
      */
-    std::unique_ptr<WorkflowInstance> instantiate();
-
-    // --- Builder assembly methods (used by ConcreteBuilders) ---
+    std::unique_ptr<WorkflowInstance> instantiate(int instanceId);
 
     /**
-     * @brief Sets the version number of the workflow blueprint.
-     * @param ver Version integer.
-     */
-    void setVersion(int ver);
-
-    /**
-     * @brief Gets the version number of the workflow blueprint.
-     * @return Version integer.
+     * @brief Gets the blueprint version.
+     * @return The version number.
      */
     int getVersion() const;
 
     /**
-     * @brief Sets the name of the workflow definition.
-     * @param defName Blueprint name string.
+     * @brief Gets the blueprint name.
+     * @return The name (the engine uses it as the registry key).
      */
-    void setName(const std::string& defName);
+    const std::string &getName() const;
 
     /**
-     * @brief Gets the name of the workflow definition.
-     * @return Blueprint name string.
+     * @brief Sets the root of the master task tree.
+     *
+     * Takes ownership of @p rootComponent. Any previously set root is
+     * deleted, so replacing the root does not leak.
+     *
+     * @param rootComponent The new root (usually a Subprocess).
      */
-    std::string getName() const;
+    void setRoot(WorkflowComponent *rootComponent);
 
     /**
-     * @brief Sets the root component of the master task tree.
-     * @param rootComponent Pointer to the root WorkflowComponent (usually a Subprocess).
+     * @brief Gets the root of the master task tree.
+     * @return Non-owning pointer to the root, or nullptr if none is set.
      */
-    void setRoot(WorkflowComponent* rootComponent);
+    WorkflowComponent *getRoot() const;
 
     /**
-     * @brief Gets the root component of the master task tree.
-     * @return Pointer to the root WorkflowComponent.
+     * @brief Registers a top-level participant (Employee or Department).
+     *
+     * Takes ownership of @p participant. A null pointer is ignored.
+     *
+     * @param participant The participant to register.
      */
-    WorkflowComponent* getRoot() const;
+    void addParticipant(Participant *participant);
 
     /**
-     * @brief Registers a Participant (Employee or Department) in the definition.
-     * @param participant Pointer to the Participant to add.
+     * @brief Gets the top-level participants.
+     *
+     * Employees inside a Department are not listed here; reach them through
+     * Participant::getChildren() on the Department.
+     *
+     * @return Const reference to the list (the definition keeps ownership).
      */
-    void addParticipant(Participant* participant);
-
-    /**
-     * @brief Returns the list of participants associated with this definition.
-     * @return Const reference to the vector of Participant pointers.
-     */
-    const std::vector<Participant*>& getParticipants() const;
+    const std::vector<Participant *> &getParticipants() const;
 };
 
 #endif // WORKFLOWDEFINITION_H

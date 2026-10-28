@@ -1,20 +1,12 @@
 /**
  * @file WorkflowInstance.cpp
- * @brief Skeleton implementation of WorkflowInstance.
- *
- * ============================================================================
- * DESIGN ROLE & PATTERN PARTICIPATION:
- * - Role: Active Runtime Instance (Spawned by WorkflowDefinition::instantiate())
- * - Owns its cloned WorkflowComponent tree and DataPayload to guarantee
- *   strict instance isolation as required by the TIVIDY specification.
- * ============================================================================
+ * @brief Implementation of WorkflowInstance.
  */
 
 #include "WorkflowInstance.h"
-#include <iostream>
 
+#include "Log.h"
 #include "WorkflowComponent.h"
-#include "WorkflowOrchestrator.h"
 
 WorkflowInstance::WorkflowInstance(int instanceId,
                                    const std::string &defName,
@@ -30,18 +22,15 @@ WorkflowInstance::WorkflowInstance(int instanceId,
 
 WorkflowInstance::~WorkflowInstance()
 {
-
-    if (root != nullptr)
-    {
-        delete root;
-        root = nullptr;
-    }
+    // Recursively deletes every Subprocess and Task in this instance.
+    delete root;
+    root = nullptr;
 }
 
 void WorkflowInstance::start()
 {
-    std::cout << "[WorkflowInstance #" << id << " - " << definitionName
-              << " v" << definitionVersion << "] Starting execution..." << std::endl;
+    TLOG("[WorkflowInstance #" << id << " - " << definitionName
+                               << " v" << definitionVersion << "] Starting...");
 
     if (root != nullptr)
     {
@@ -52,8 +41,7 @@ void WorkflowInstance::start()
 
 void WorkflowInstance::stop()
 {
-    std::cout << "[WorkflowInstance #" << id << " - " << definitionName
-              << "] Stopping execution..." << std::endl;
+    TLOG("[WorkflowInstance #" << id << " - " << definitionName << "] Stopping...");
 
     if (root != nullptr)
     {
@@ -76,7 +64,7 @@ int WorkflowInstance::getId() const
     return id;
 }
 
-std::string WorkflowInstance::getDefinitionName() const
+const std::string &WorkflowInstance::getDefinitionName() const
 {
     return definitionName;
 }
@@ -89,11 +77,6 @@ int WorkflowInstance::getDefinitionVersion() const
 WorkflowComponent *WorkflowInstance::getRoot() const
 {
     return root;
-}
-
-void WorkflowInstance::setRoot(WorkflowComponent *newRoot)
-{
-    root = newRoot;
 }
 
 WorkflowOrchestrator *WorkflowInstance::getMediator() const
