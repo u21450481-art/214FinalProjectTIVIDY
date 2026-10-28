@@ -15,7 +15,7 @@
 
 CustomDefinitionBuilder::CustomDefinitionBuilder() : WorkflowDefinitionBuilder()
 {
-    reset();
+    // reset();
 }
 
 CustomDefinitionBuilder::~CustomDefinitionBuilder()
@@ -26,7 +26,7 @@ CustomDefinitionBuilder::~CustomDefinitionBuilder()
 
 void CustomDefinitionBuilder::reset()
 {
-    reset("Custom_Workflow", 1);
+    reset("Custom_Workflow", 1); // the director needs this no argument form
 }
 
 void CustomDefinitionBuilder::reset(const std::string &workflowName, int version)
