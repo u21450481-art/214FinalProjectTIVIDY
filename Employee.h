@@ -8,14 +8,19 @@
 #include <string>
 
 class Employee : public Participant{
-    std::string employeeName;
     std::vector<Task*> tasks;
+    std::string role;
+    int experience;
+    int workload;
 
 public:
-    Employee(std::string);
+    Employee(std::string, int);
     ~Employee();
     void assignTask(Task*);
-    std::string getName();
+    std::string getRole() const override;
+    int getExperience() const override;
+    int getWorkload() const override;
+    
     void Operation();
 
 };

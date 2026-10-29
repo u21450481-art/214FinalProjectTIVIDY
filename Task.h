@@ -13,11 +13,12 @@ class Task : public WorkflowComponent
     int priority;
     std::string deadline;
     std::string outcome; // the decision stored on the task, for example "approved"
+    std::string requiredRole;
 
     std::string branchCondition;
 
 public:
-    Task(int priority, std::string deadline, std::string name);
+    Task(int priority, std::string deadline, std::string name, std::string requiredRole);
     ~Task();
     std::string getName();
     void execute();
@@ -31,7 +32,7 @@ public:
     std::string getBranchCondition() const;
     WorkflowComponent *clone() const override;
 
-    const std::string &getRequiredRole() const { return "requiredRole"; }
+    const std::string &getRequiredRole() const;
 };
 
 #endif

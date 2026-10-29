@@ -4,8 +4,11 @@
 #include <string>
 #include <vector>
 
-class Task;
-class Participant;
+#include "Task.h"
+#include "Participant.h"
+
+// class Task;
+// class Participant;
 
 /**
  * @brief Strategy interface (GoF role: Strategy).
