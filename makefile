@@ -25,6 +25,7 @@ SRCS = main.cpp \
        Command.cpp \
        CommandHistory.cpp \
        MacroCommand.cpp \
+       SetDataCommand.cpp \
        StartCommand.cpp \
        CompleteCommand.cpp \
        RejectCommand.cpp \
@@ -41,8 +42,7 @@ SRCS = main.cpp \
        ReturnsSystem.cpp \
        ApprovalRequest.cpp \
        ManagerHandler.cpp \
-       DirectorHandler.cpp \
-       CFOHandler.cpp
+       DirectorHandler.cpp
 OBJS = $(SRCS:.cpp=.o)
 
 all: $(TARGET)
@@ -86,6 +86,7 @@ TUI_SRCS = main.cpp \
        Command.cpp \
        CommandHistory.cpp \
        MacroCommand.cpp \
+       SetDataCommand.cpp \
        StartCommand.cpp \
        CompleteCommand.cpp \
        RejectCommand.cpp \
@@ -102,8 +103,7 @@ TUI_SRCS = main.cpp \
        ReturnsSystem.cpp \
        ApprovalRequest.cpp \
        ManagerHandler.cpp \
-       DirectorHandler.cpp \
-       CFOHandler.cpp
+       DirectorHandler.cpp
 
 TUI_OBJS = $(TUI_SRCS:.cpp=.tui.o)
 
