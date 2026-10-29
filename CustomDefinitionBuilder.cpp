@@ -1,10 +1,4 @@
-/**
- * @file CustomDefinitionBuilder.cpp
- * @brief Implementation of CustomDefinitionBuilder.
- */
-
 #include "CustomDefinitionBuilder.h"
-#include <memory>
 #include <stdexcept>
 
 #include "Log.h"
@@ -13,20 +7,10 @@
 #include "Department.h"
 #include "Employee.h"
 
-CustomDefinitionBuilder::CustomDefinitionBuilder() : WorkflowDefinitionBuilder()
+void CustomDefinitionBuilder::requireBuild() const
 {
-    reset();
-}
-
-CustomDefinitionBuilder::~CustomDefinitionBuilder()
-{
-    subprocessRegistry.clear();
-    departmentRegistry.clear();
-}
-
-void CustomDefinitionBuilder::reset()
-{
-    reset("Custom_Workflow", 1);
+    if (definition == nullptr)
+        throw std::logic_error("No active blueprint: call reset(name, version) first.");
 }
 
 void CustomDefinitionBuilder::reset(const std::string &name, int version)

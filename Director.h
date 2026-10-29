@@ -23,17 +23,18 @@
  * @class Director
  * @brief Directs a WorkflowDefinitionBuilder to construct a WorkflowDefinition in a standard sequence.
  */
-class Director {
+class Director
+{
 private:
     /** @brief Pointer to the active builder (aggregated; Director does not own memory). */
-    WorkflowDefinitionBuilder* builder;
+    WorkflowDefinitionBuilder *builder;
 
 public:
     /**
      * @brief Constructs a Director with an optional initial builder.
      * @param b Pointer to a WorkflowDefinitionBuilder (defaults to nullptr).
      */
-    Director(WorkflowDefinitionBuilder* b = nullptr);
+    Director(WorkflowDefinitionBuilder *b = nullptr);
 
     /**
      * @brief Destructor. Does not delete the aggregated builder.
@@ -44,13 +45,13 @@ public:
      * @brief Sets or swaps the active builder used by the Director.
      * @param b Pointer to the new WorkflowDefinitionBuilder.
      */
-    void setBuilder(WorkflowDefinitionBuilder* b);
+    void setBuilder(WorkflowDefinitionBuilder *b);
 
     /**
      * @brief Executes the full step-by-step construction sequence on the active builder.
      * Calls reset(), buildParticipants(), and buildTaskTree() in strict order.
      */
-    void Construct();
+    void construct();
 };
 
 #endif // DIRECTOR_H
