@@ -1,29 +1,32 @@
 #ifndef SUBPROCESS_H
 #define SUBPROCESS_H
 
-#include <memory>
+#include <string>
 #include <vector>
+#include <memory>
 
 #include "WorkflowComponent.h"
 #include "Task.h"
 
 using namespace std;
 
-class Subprocess: public WorkflowComponent {
-    vector<WorkflowComponent*> children;
+class Subprocess : public WorkflowComponent
+{
+    std::vector<WorkflowComponent *> children;
+    std::string name;
 
-    public:
-    Subprocess();
+public:
+    Subprocess(std::string name = "Subprocess");
     ~Subprocess();
     void execute();
-    void add(WorkflowComponent* c) override;
-    void remove(WorkflowComponent* c) override;
-    vector<WorkflowComponent*> getChildren() override;
+    std::string getName();
+    void add(WorkflowComponent *c) override;
+    void remove(WorkflowComponent *c) override;
+    std::vector<WorkflowComponent *> getChildren() override;
     bool allChildrenComplete();
-    
+
+    // PROTOTYPE
+    WorkflowComponent *clone() const override;
 };
-
-
-
 
 #endif
