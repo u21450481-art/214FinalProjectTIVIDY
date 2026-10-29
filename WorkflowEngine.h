@@ -25,9 +25,9 @@
 #ifndef WORKFLOWENGINE_H
 #define WORKFLOWENGINE_H
 
+#include <cstddef>
 #include <map>
 #include <memory>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -37,7 +37,9 @@
 #include "WorkflowInstance.h"
 
 class EngineMediator;
-class OutputCapture; // private helper, defined in WorkflowEngine.cpp
+class AssignmentStrategy;
+class DataAdapter;
+class WorkflowComponent;
 
 /**
  * @struct TaskRow
@@ -66,14 +68,15 @@ struct TaskRow
 class WorkflowEngine
 {
 private:
-    friend class OutputCapture;
-
     enum class TaskAction
     {
         Complete,
         Reject,
         Cancel
     };
+
+    /** @brief Maximum number of activity log lines kept. */
+    static constexpr std::size_t maxLogLines = 500;
 
     // Declaration order matters: members are destroyed in reverse, so the
     // mediators go first, then the instances, then the blueprints whose
@@ -86,16 +89,21 @@ private:
     std::map<int, std::string> adapterNames; ///< Adapter chosen per instance.
     std::vector<std::string> activityLog;
     std::string lastError;
-    std::ostringstream captured; ///< Subsystem output waiting to be moved into the log.
     int nextGlobalInstanceId;
 
-    bool registerBlueprint();
+    // ---- internal helpers ----
     void logEvent(const std::string &message);
     bool fail(const std::string &message);
-    void drainCaptured();
     WorkflowInstance *findInstance(int id) const;
     EngineMediator *findMediator(int id) const;
     bool runTaskAction(int instanceId, int taskIndex, TaskAction action);
+
+    // ---- static helpers (no engine state needed) ----
+    static AssignmentStrategy *makeStrategy(const std::string &name);
+    static DataAdapter *makeAdapter(const std::string &name);
+    static bool stateIs(WorkflowComponent *c, const char *name);
+    static void collectRows(WorkflowComponent *node, int depth, std::vector<TaskRow> &out);
+    static WorkflowComponent *findNode(WorkflowInstance *inst, int index);
 
 public:
     WorkflowEngine();
@@ -133,9 +141,6 @@ public:
     int spawnInstance(const std::string &blueprintName,
                       const std::string &strategyName = "LeastLoaded");
 
-    /** @brief Destroys an instance and its mediator. */
-    bool removeInstance(int instanceId);
-
     /** @brief IDs of all instances, oldest first. */
     std::vector<int> getActiveInstanceIds() const;
 
@@ -158,9 +163,6 @@ public:
 
     /** @brief Cancels the task at the given row index. */
     bool cancelTask(int instanceId, int taskIndex);
-
-    /** @brief Completes the first single task that is currently InProgress. */
-    bool completeNextTask(int instanceId);
 
     /** @brief The instance's task tree as rows (Composite + Iterator + State). */
     std::vector<TaskRow> getTaskRows(int instanceId) const;
@@ -210,21 +212,18 @@ public:
     /** @brief One line per command, oldest first; undone ones are marked. */
     std::vector<std::string> getHistory(int instanceId) const;
 
-    // ---------------- Reports and log ----------------
+    // ---------------- Report and log ----------------
 
     /** @brief Full report for one instance. */
     std::vector<std::string> generateReport(int instanceId) const;
 
-    /** @brief Summary of blueprints, instances, strategies and adapters. */
-    std::vector<std::string> generateSystemReport() const;
-
-    /** @brief Writes the system report, every instance report and the log to a text file. */
+    /** @brief Writes every instance's report and the activity log to a text file. */
     bool exportReport(const std::string &path);
 
-    /** @brief Engine and subsystem events, oldest first (capped at 500 lines). */
+    /** @brief Facade events, oldest first (capped at 500 lines). */
     const std::vector<std::string> &getActivityLog() const;
 
-    /** @brief Reason the last failed call failed ("" if it succeeded). */
+    /** @brief Reason the last failed call failed. */
     const std::string &getLastError() const;
 };
 

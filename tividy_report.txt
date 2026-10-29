@@ -1,0 +1,43 @@
+TIVIDY SYSTEM REPORT
+
+BLUEPRINTS (2)
+  Bank_Process_Loan v1: 3 tasks, 1 people
+  Retail_Return_Item v1: 4 tasks, 3 people
+
+INSTANCES (1)
+  #1  Bank_Process_Loan v1  [Not started]  strategy=LeastLoaded  adapter=none
+
+Available strategies: LeastLoaded, RoleBased, MostExperience
+Available adapters:   claims, hr
+Activity log entries: 4
+
+----------------------------------------
+INSTANCE #1: Bank_Process_Loan v1
+  Status:    Not started
+  Strategy:  LeastLoaded
+  Adapter:   none
+  Progress:  0/3 tasks complete (0 in progress, 3 not started, 0 rejected/cancelled)
+
+TASKS
+  Bank_Process_Loan_Root  [NotStarted]
+    Credit_Assessment  [NotStarted]
+      Credit Bureau Check  [NotStarted]
+      Sign-Off  [NotStarted]  if creditStatus=Approved
+    Verify FICA  [NotStarted]
+
+PAYLOAD
+  (empty)
+
+COMMAND HISTORY (0)
+  (none)
+
+PARTICIPANTS
+  Credit Underwriting
+    Naledi  (holds 0 task(s))
+
+----------------------------------------
+ACTIVITY LOG
+  [Engine] TIVIDY WorkflowEngine initialized.
+  [Builder] Registered blueprint 'Retail_Return_Item'.
+  [Builder] Registered blueprint 'Bank_Process_Loan'.
+  [Facade] Spawned instance #1 from 'Bank_Process_Loan' using the LeastLoaded strategy.
