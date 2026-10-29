@@ -1,12 +1,11 @@
 /**
  * @file WorkflowEngine.cpp
- * @brief Implementation of the WorkflowEngine Facade.
+ * @brief Implementation of the WorkflowEngine facade.
  */
 
 #include "WorkflowEngine.h"
 
 #include <fstream>
-#include <stdexcept>
 
 #include "ClaimsDataAdapter.h"
 #include "ConcreteStrategies.h"
@@ -19,9 +18,7 @@
 #include "WorkflowComponent.h"
 #include "WorkflowIterator.h"
 
-// ============================================================================
-// Static helpers
-// ============================================================================
+//---------- helpers ----------
 
 AssignmentStrategy *WorkflowEngine::makeStrategy(const std::string &name)
 {
@@ -45,23 +42,22 @@ DataAdapter *WorkflowEngine::makeAdapter(const std::string &name)
 
 bool WorkflowEngine::stateIs(WorkflowComponent *c, const char *name)
 {
-    return c != nullptr && c->getState() != nullptr && c->getState()->getName() == name;
+    return c != nullptr && c->getState()->getName() == name;
 }
 
-// Pre-order walk (parent first, children left to right). This is the same
-// order depthFirstIterator visits nodes, so row numbers match findNode().
+// parent first, then children left to right (the same order the iterator uses, so findNode lines up)
 void WorkflowEngine::collectRows(WorkflowComponent *node, int depth, std::vector<TaskRow> &out)
 {
     if (node == nullptr)
         return;
 
     TaskRow row;
-    row.index = static_cast<int>(out.size());
     row.depth = depth;
     row.name = node->getName();
-    row.state = (node->getState() != nullptr) ? node->getState()->getName() : "Unknown";
+    row.state = node->getState()->getName();
     row.isGroup = true;
 
+    // only single tasks have an assignee, outcome and condition
     if (Task *t = dynamic_cast<Task *>(node))
     {
         row.isGroup = false;
@@ -76,7 +72,7 @@ void WorkflowEngine::collectRows(WorkflowComponent *node, int depth, std::vector
         collectRows(child, depth + 1, out);
 }
 
-// Finds the node at a row index using the Iterator pattern.
+// walks the tree with the iterator until it reaches the row number
 WorkflowComponent *WorkflowEngine::findNode(WorkflowInstance *inst, int index)
 {
     if (inst == nullptr || inst->getRoot() == nullptr || index < 0)
@@ -92,32 +88,22 @@ WorkflowComponent *WorkflowEngine::findNode(WorkflowInstance *inst, int index)
     return nullptr;
 }
 
-// ============================================================================
-// Construction and helpers
-// ============================================================================
+//---------- setup ----------
 
 WorkflowEngine::WorkflowEngine()
     : builder(),
       director(&builder),
-      blueprints(),
-      instances(),
-      mediators(),
-      adapterNames(),
-      activityLog(),
-      lastError(),
       nextGlobalInstanceId(1)
 {
-    logEvent("[Engine] TIVIDY WorkflowEngine initialized.");
+    logEvent("[Facade] Engine started.");
 }
 
+// defined here (not in the header) because the mediator type must be complete to delete it
 WorkflowEngine::~WorkflowEngine() {}
 
 void WorkflowEngine::logEvent(const std::string &message)
 {
     activityLog.push_back(message);
-    if (activityLog.size() > maxLogLines)
-        activityLog.erase(activityLog.begin(),
-                          activityLog.begin() + static_cast<std::ptrdiff_t>(activityLog.size() - maxLogLines));
 }
 
 bool WorkflowEngine::fail(const std::string &message)
@@ -142,9 +128,7 @@ EngineMediator *WorkflowEngine::findMediator(int id) const
 const std::vector<std::string> &WorkflowEngine::getActivityLog() const { return activityLog; }
 const std::string &WorkflowEngine::getLastError() const { return lastError; }
 
-// ============================================================================
-// Blueprints
-// ============================================================================
+//---------- blueprints ----------
 
 bool WorkflowEngine::assembleBlueprint(const std::string &name,
                                        int version,
@@ -160,19 +144,13 @@ bool WorkflowEngine::assembleBlueprint(const std::string &name,
     if (tasks.empty())
         return fail("Blueprint '" + name + "' needs at least one task.");
 
-    // The mediator treats a participant with no children as a person, so an
-    // empty department could be handed a task. Reject it here.
+    // the mediator treats anyone with no children as a person, so an empty department would be given tasks
     for (const std::string &dept : departments)
     {
         bool hasMember = false;
         for (const EmployeeSpec &e : employees)
-        {
             if (e.department == dept)
-            {
                 hasMember = true;
-                break;
-            }
-        }
         if (!hasMember)
             return fail("Department '" + dept + "' has no employees.");
     }
@@ -186,13 +164,8 @@ bool WorkflowEngine::assembleBlueprint(const std::string &name,
         return fail(std::string("Builder: ") + e.what());
     }
 
-    // Take ownership of the finished product from the builder.
-    std::unique_ptr<WorkflowDefinition> def(builder.getResult());
-    if (!def)
-        return fail("The builder produced no blueprint.");
-
-    blueprints[name] = std::move(def);
-    logEvent("[Builder] Registered blueprint '" + name + "'.");
+    blueprints[name] = std::unique_ptr<WorkflowDefinition>(builder.getResult());
+    logEvent("[Builder] Created blueprint '" + name + "'.");
     return true;
 }
 
@@ -204,9 +177,7 @@ std::vector<std::string> WorkflowEngine::getBlueprintNames() const
     return names;
 }
 
-// ============================================================================
-// Instances
-// ============================================================================
+//---------- instances ----------
 
 int WorkflowEngine::spawnInstance(const std::string &blueprintName, const std::string &strategyName)
 {
@@ -225,13 +196,12 @@ int WorkflowEngine::spawnInstance(const std::string &blueprintName, const std::s
     }
 
     WorkflowDefinition *def = bp->second.get();
-    const int id = nextGlobalInstanceId++;
+    int id = nextGlobalInstanceId++;
 
-    // Prototype: the instance owns a deep copy of the blueprint's task tree.
+    // prototype: the instance gets its own copy of the task tree
     std::unique_ptr<WorkflowInstance> inst = def->instantiate(id);
 
-    // Mediator: registers itself with every node, knows who can be assigned
-    // work (flattened participants) and owns the strategy.
+    // the mediator owns the strategy and works out who can be assigned tasks
     std::unique_ptr<EngineMediator> med(new EngineMediator());
     med->setRoot(inst->getRoot());
     med->setCandidates(def->getParticipants());
@@ -241,8 +211,7 @@ int WorkflowEngine::spawnInstance(const std::string &blueprintName, const std::s
     instances[id] = std::move(inst);
     mediators[id] = std::move(med);
 
-    logEvent("[Facade] Spawned instance #" + std::to_string(id) + " from '" + blueprintName +
-             "' using the " + strategyName + " strategy.");
+    logEvent("[Facade] Spawned instance #" + std::to_string(id) + " from '" + blueprintName + "'.");
     return id;
 }
 
@@ -273,13 +242,10 @@ std::string WorkflowEngine::getInstanceLabel(int instanceId) const
     if (!inst)
         return "#" + std::to_string(instanceId) + " (missing)";
     return "#" + std::to_string(instanceId) + "  " + inst->getDefinitionName() +
-           " v" + std::to_string(inst->getDefinitionVersion()) +
            "  [" + getInstanceStatus(instanceId) + "]";
 }
 
-// ============================================================================
-// Execution
-// ============================================================================
+//---------- running ----------
 
 bool WorkflowEngine::startInstance(int instanceId)
 {
@@ -288,66 +254,50 @@ bool WorkflowEngine::startInstance(int instanceId)
     if (!inst || !med)
         return fail("Instance #" + std::to_string(instanceId) + " not found.");
     if (!stateIs(inst->getRoot(), "NotStarted"))
-        return fail("Instance #" + std::to_string(instanceId) + " has already been started.");
+        return fail("Instance #" + std::to_string(instanceId) + " was already started.");
 
     med->startWorkflow();
     logEvent("[Facade] Started instance #" + std::to_string(instanceId) + ".");
     return true;
 }
 
-bool WorkflowEngine::runTaskAction(int instanceId, int taskIndex, TaskAction action)
-{
-    WorkflowInstance *inst = findInstance(instanceId);
-    EngineMediator *med = findMediator(instanceId);
-    if (!inst || !med)
-        return fail("Instance #" + std::to_string(instanceId) + " not found.");
-
-    WorkflowComponent *node = findNode(inst, taskIndex);
-    if (!node)
-        return fail("No task at row " + std::to_string(taskIndex) + ".");
-
-    const std::string name = node->getName();
-    const std::string before = node->getState()->getName();
-    bool ok = false;
-    const char *verb = "";
-
-    switch (action)
-    {
-    case TaskAction::Complete:
-        ok = med->completeTask(node);
-        verb = "Complete";
-        break;
-    case TaskAction::Reject:
-        ok = med->rejectTask(node);
-        verb = "Reject";
-        break;
-    case TaskAction::Cancel:
-        ok = med->cancelTask(node);
-        verb = "Cancel";
-        break;
-    }
-
-    if (!ok)
-        return fail(std::string(verb) + " refused for '" + name + "' (state: " + before + ").");
-
-    logEvent(std::string("[Facade] ") + verb + " '" + name + "' on instance #" +
-             std::to_string(instanceId) + ".");
-    return true;
-}
-
 bool WorkflowEngine::completeTask(int instanceId, int taskIndex)
 {
-    return runTaskAction(instanceId, taskIndex, TaskAction::Complete);
+    EngineMediator *med = findMediator(instanceId);
+    WorkflowComponent *task = findNode(findInstance(instanceId), taskIndex);
+    if (!med || !task)
+        return fail("Task not found.");
+    if (!med->completeTask(task))
+        return fail("Could not complete '" + task->getName() + "'.");
+
+    logEvent("[Facade] Completed '" + task->getName() + "'.");
+    return true;
 }
 
 bool WorkflowEngine::rejectTask(int instanceId, int taskIndex)
 {
-    return runTaskAction(instanceId, taskIndex, TaskAction::Reject);
+    EngineMediator *med = findMediator(instanceId);
+    WorkflowComponent *task = findNode(findInstance(instanceId), taskIndex);
+    if (!med || !task)
+        return fail("Task not found.");
+    if (!med->rejectTask(task))
+        return fail("Could not reject '" + task->getName() + "'.");
+
+    logEvent("[Facade] Rejected '" + task->getName() + "'.");
+    return true;
 }
 
 bool WorkflowEngine::cancelTask(int instanceId, int taskIndex)
 {
-    return runTaskAction(instanceId, taskIndex, TaskAction::Cancel);
+    EngineMediator *med = findMediator(instanceId);
+    WorkflowComponent *task = findNode(findInstance(instanceId), taskIndex);
+    if (!med || !task)
+        return fail("Task not found.");
+    if (!med->cancelTask(task))
+        return fail("Could not cancel '" + task->getName() + "'.");
+
+    logEvent("[Facade] Cancelled '" + task->getName() + "'.");
+    return true;
 }
 
 std::vector<TaskRow> WorkflowEngine::getTaskRows(int instanceId) const
@@ -359,9 +309,7 @@ std::vector<TaskRow> WorkflowEngine::getTaskRows(int instanceId) const
     return rows;
 }
 
-// ============================================================================
-// Strategy
-// ============================================================================
+//---------- strategy ----------
 
 std::vector<std::string> WorkflowEngine::getStrategyNames() const
 {
@@ -374,13 +322,11 @@ bool WorkflowEngine::setStrategy(int instanceId, const std::string &strategyName
     if (!med)
         return fail("Instance #" + std::to_string(instanceId) + " not found.");
 
-    std::unique_ptr<AssignmentStrategy> strategy(makeStrategy(strategyName));
+    AssignmentStrategy *strategy = makeStrategy(strategyName);
     if (!strategy)
         return fail("Unknown strategy '" + strategyName + "'.");
 
-    med->setStrategy(strategy.release()); // the mediator takes ownership
-    logEvent("[Facade] Instance #" + std::to_string(instanceId) + " now uses the " +
-             strategyName + " strategy.");
+    med->setStrategy(strategy); // the mediator owns it now
     return true;
 }
 
@@ -392,9 +338,7 @@ std::string WorkflowEngine::getStrategyName(int instanceId) const
     return med->getStrategy()->getName();
 }
 
-// ============================================================================
-// Adapter
-// ============================================================================
+//---------- adapter ----------
 
 std::vector<std::string> WorkflowEngine::getAdapterNames() const
 {
@@ -407,14 +351,12 @@ bool WorkflowEngine::setAdapter(int instanceId, const std::string &adapterName)
     if (!med)
         return fail("Instance #" + std::to_string(instanceId) + " not found.");
 
-    std::unique_ptr<DataAdapter> adapter(makeAdapter(adapterName));
+    DataAdapter *adapter = makeAdapter(adapterName);
     if (!adapter)
         return fail("Unknown adapter '" + adapterName + "'.");
 
-    med->setDataAdapter(adapter.release()); // the mediator takes ownership
+    med->setDataAdapter(adapter); // the mediator owns it now
     adapterNames[instanceId] = adapterName;
-    logEvent("[Facade] Instance #" + std::to_string(instanceId) + " now uses the " +
-             adapterName + " adapter.");
     return true;
 }
 
@@ -431,21 +373,18 @@ bool WorkflowEngine::importData(int instanceId, const std::string &recordId)
     if (!inst || !med)
         return fail("Instance #" + std::to_string(instanceId) + " not found.");
     if (!adapterNames.count(instanceId))
-        return fail("No adapter set for instance #" + std::to_string(instanceId) + ". Choose one first.");
+        return fail("Choose an adapter first.");
     if (recordId.empty())
-        return fail("Enter a record id to import.");
+        return fail("Enter a record id.");
 
     if (!med->importData(recordId, &inst->getPayload()))
-        return fail("Import of '" + recordId + "' failed (record not found).");
+        return fail("Could not import record '" + recordId + "'.");
 
-    logEvent("[Facade] Imported record '" + recordId + "' into instance #" +
-             std::to_string(instanceId) + " via the " + getAdapterName(instanceId) + " adapter.");
+    logEvent("[Facade] Imported '" + recordId + "' into instance #" + std::to_string(instanceId) + ".");
     return true;
 }
 
-// ============================================================================
-// Payload and history
-// ============================================================================
+//---------- payload and history ----------
 
 bool WorkflowEngine::setPayloadValue(int instanceId, const std::string &key, const std::string &value)
 {
@@ -456,11 +395,9 @@ bool WorkflowEngine::setPayloadValue(int instanceId, const std::string &key, con
     if (key.empty())
         return fail("Payload key cannot be empty.");
 
-    // Through the mediator so it becomes an undoable SetDataCommand.
+    // goes through the mediator so it can be undone
     if (!med->setData(&inst->getPayload(), key, value))
         return fail("Could not set '" + key + "'.");
-
-    logEvent("[Facade] Instance #" + std::to_string(instanceId) + ": " + key + " = " + value);
     return true;
 }
 
@@ -475,24 +412,16 @@ std::map<std::string, std::string> WorkflowEngine::getPayloadMap(int instanceId)
 bool WorkflowEngine::undo(int instanceId)
 {
     EngineMediator *med = findMediator(instanceId);
-    if (!med)
-        return fail("Instance #" + std::to_string(instanceId) + " not found.");
-    if (!med->undo())
-        return fail("Nothing to undo on instance #" + std::to_string(instanceId) + ".");
-
-    logEvent("[Facade] Undid the last action on instance #" + std::to_string(instanceId) + ".");
+    if (!med || !med->undo())
+        return fail("Nothing to undo.");
     return true;
 }
 
 bool WorkflowEngine::redo(int instanceId)
 {
     EngineMediator *med = findMediator(instanceId);
-    if (!med)
-        return fail("Instance #" + std::to_string(instanceId) + " not found.");
-    if (!med->redo())
-        return fail("Nothing to redo on instance #" + std::to_string(instanceId) + ".");
-
-    logEvent("[Facade] Redid an action on instance #" + std::to_string(instanceId) + ".");
+    if (!med || !med->redo())
+        return fail("Nothing to redo.");
     return true;
 }
 
@@ -504,9 +433,7 @@ std::vector<std::string> WorkflowEngine::getHistory(int instanceId) const
     return {};
 }
 
-// ============================================================================
-// Report
-// ============================================================================
+//---------- report ----------
 
 std::vector<std::string> WorkflowEngine::generateReport(int instanceId) const
 {
@@ -519,41 +446,30 @@ std::vector<std::string> WorkflowEngine::generateReport(int instanceId) const
         return out;
     }
 
-    const std::vector<TaskRow> rows = getTaskRows(instanceId);
-    int total = 0, complete = 0, inProgress = 0, notStarted = 0, stopped = 0;
+    std::vector<TaskRow> rows = getTaskRows(instanceId);
+    int total = 0, complete = 0;
     for (const TaskRow &r : rows)
     {
         if (r.isGroup)
             continue;
-        ++total;
+        total++;
         if (r.state == "Complete")
-            ++complete;
-        else if (r.state == "InProgress")
-            ++inProgress;
-        else if (r.state == "NotStarted")
-            ++notStarted;
-        else
-            ++stopped; // Rejected or Cancelled
+            complete++;
     }
 
-    out.push_back("INSTANCE #" + std::to_string(instanceId) + ": " + inst->getDefinitionName() +
-                  " v" + std::to_string(inst->getDefinitionVersion()));
+    out.push_back("INSTANCE #" + std::to_string(instanceId) + ": " + inst->getDefinitionName());
     out.push_back("  Status:    " + getInstanceStatus(instanceId));
     if (med->isHalted() && med->getHaltedAt() != nullptr)
         out.push_back("  Halted at: " + med->getHaltedAt()->getName());
     out.push_back("  Strategy:  " + getStrategyName(instanceId));
     out.push_back("  Adapter:   " + getAdapterName(instanceId));
-    out.push_back("  Progress:  " + std::to_string(complete) + "/" + std::to_string(total) +
-                  " tasks complete (" + std::to_string(inProgress) + " in progress, " +
-                  std::to_string(notStarted) + " not started, " + std::to_string(stopped) +
-                  " rejected/cancelled)");
+    out.push_back("  Progress:  " + std::to_string(complete) + "/" + std::to_string(total) + " tasks complete");
 
     out.push_back("");
     out.push_back("TASKS");
     for (const TaskRow &r : rows)
     {
-        std::string line = "  " + std::string(static_cast<std::size_t>(r.depth) * 2, ' ') + r.name +
-                           "  [" + r.state + "]";
+        std::string line = "  " + std::string(r.depth * 2, ' ') + r.name + "  [" + r.state + "]";
         if (!r.assignee.empty())
             line += "  -> " + r.assignee;
         if (!r.outcome.empty())
@@ -565,19 +481,19 @@ std::vector<std::string> WorkflowEngine::generateReport(int instanceId) const
 
     out.push_back("");
     out.push_back("PAYLOAD");
-    const std::map<std::string, std::string> payload = getPayloadMap(instanceId);
+    std::map<std::string, std::string> payload = getPayloadMap(instanceId);
     if (payload.empty())
         out.push_back("  (empty)");
     for (const auto &kv : payload)
         out.push_back("  " + kv.first + " = " + kv.second);
 
-    const std::vector<std::string> history = med->getHistory();
+    std::vector<std::string> history = med->getHistory();
     out.push_back("");
-    out.push_back("COMMAND HISTORY (" + std::to_string(history.size()) + ")");
+    out.push_back("COMMAND HISTORY");
     if (history.empty())
         out.push_back("  (none)");
-    for (std::size_t i = 0; i < history.size(); ++i)
-        out.push_back("  " + std::to_string(i + 1) + ". " + history[i]);
+    for (const std::string &h : history)
+        out.push_back("  " + h);
 
     return out;
 }
@@ -586,20 +502,19 @@ bool WorkflowEngine::exportReport(const std::string &path)
 {
     std::ofstream file(path.c_str());
     if (!file)
-        return fail("Could not open '" + path + "' for writing.");
+        return fail("Could not write to '" + path + "'.");
 
-    file << "TIVIDY REPORT\n";
     for (const auto &pair : instances)
     {
-        file << "\n----------------------------------------\n";
         for (const std::string &line : generateReport(pair.first))
             file << line << '\n';
+        file << '\n';
     }
 
-    file << "\n----------------------------------------\nACTIVITY LOG\n";
+    file << "ACTIVITY LOG\n";
     for (const std::string &line : activityLog)
         file << "  " << line << '\n';
 
-    logEvent("[Facade] Report exported to '" + path + "'.");
+    logEvent("[Facade] Report saved to '" + path + "'.");
     return true;
 }
