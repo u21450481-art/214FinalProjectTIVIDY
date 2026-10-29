@@ -30,6 +30,8 @@ public:
     void setBranchCondition(const std::string &c);
     std::string getBranchCondition() const;
     WorkflowComponent *clone() const override;
+
+    const std::string &getRequiredRole() const { return "requiredRole"; }
 };
 
 #endif

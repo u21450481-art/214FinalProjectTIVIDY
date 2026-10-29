@@ -6,7 +6,8 @@
  * DESIGN ROLE & PATTERN PARTICIPATION:
  * - GoF Pattern: Facade
  * - Role Explanation:
- *   One call here hides a sequence across several subsystems
+ *   One call here hides a sequence across several subsystems, so the TUI does
+ *   not need to know the order or the wiring:
  *     assembleBlueprint -> Director, Builder, blueprint registry
  *     spawnInstance     -> Prototype (clone), Mediator, Strategy, Composite
  *     startInstance     -> Mediator, Command history, State, Strategy
@@ -36,6 +37,7 @@
 #include "WorkflowInstance.h"
 
 class EngineMediator;
+class OutputCapture; // private helper, defined in WorkflowEngine.cpp
 
 /**
  * @struct TaskRow
@@ -64,23 +66,14 @@ struct TaskRow
 class WorkflowEngine
 {
 private:
+    friend class OutputCapture;
+
     enum class TaskAction
     {
         Complete,
         Reject,
         Cancel
     };
-
-    // helper functions
-    AssignmentStrategy *makeStrategy(const std::string &name) const;
-    DataAdapter *makeAdapter(const std::string &name) const;
-    bool stateIs(WorkflowComponent *c, const char *name) const;
-    void collectRows(WorkflowComponent *node, int depth, std::vector<TaskRow> &out) const;
-    WorkflowComponent *findNode(WorkflowInstance *inst, int index) const;
-    int countPeople(Participant *p) const;
-    void describePeople(Participant *p, int depth, const std::map<std::string, int> &held, std::vector<std::string> &out) const;
-
-    bool registerBlueprint();
 
     // Declaration order matters: members are destroyed in reverse, so the
     // mediators go first, then the instances, then the blueprints whose

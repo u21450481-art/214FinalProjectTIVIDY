@@ -19,119 +19,135 @@
 #include "WorkflowComponent.h"
 #include "WorkflowIterator.h"
 
-// ============================================================================
-// Private Helpers
-// ============================================================================
-
-AssignmentStrategy *WorkflowEngine::makeStrategy(const std::string &name) const
+// Redirects std::cout into the facade's buffer for the lifetime of the object,
+// so the messages the subsystems print land in the activity log instead of
+// scribbling over the TUI. Safe to nest.
+class OutputCapture
 {
-    if (name == "LeastLoaded")
-        return new LeastLoadedStrategy();
-    if (name == "RoleBased")
-        return new RoleBasedStrategy();
-    if (name == "MostExperience")
-        return new MostExperienceStrategy();
-    return nullptr;
-}
+public:
+    explicit OutputCapture(WorkflowEngine &e)
+        : engine(e), previous(std::cout.rdbuf(e.captured.rdbuf())) {}
 
-DataAdapter *WorkflowEngine::makeAdapter(const std::string &name) const
-{
-    if (name == "claims")
-        return new ClaimsDataAdapter();
-    if (name == "hr")
-        return new HrDataAdapter();
-    return nullptr;
-}
-
-bool WorkflowEngine::stateIs(WorkflowComponent *c, const char *name) const
-{
-    return c != nullptr && c->getState() != nullptr && c->getState()->getName() == name;
-}
-
-void WorkflowEngine::collectRows(WorkflowComponent *node, int depth, std::vector<TaskRow> &out) const
-{
-    if (node == nullptr)
-        return;
-
-    TaskRow row;
-    row.index = static_cast<int>(out.size());
-    row.depth = depth;
-    row.name = node->getName();
-    if (node->getState() != nullptr)
-        row.state = node->getState()->getName();
-    else
-        row.state = "Unknown";
-    row.isGroup = true;
-
-    if (Task *t = dynamic_cast<Task *>(node))
+    ~OutputCapture()
     {
-        row.isGroup = false;
-        Participant *who = t->getAssignee();
-        if (who != nullptr)
-            row.assignee = who->getName();
-        else
-            row.assignee = "";
-        row.outcome = t->getOutcome();
-        row.condition = t->getBranchCondition();
+        std::cout.rdbuf(previous);
+        engine.drainCaptured();
     }
-    out.push_back(row);
 
-    for (WorkflowComponent *child : node->getChildren())
-        collectRows(child, depth + 1, out);
-}
+    OutputCapture(const OutputCapture &) = delete;
+    OutputCapture &operator=(const OutputCapture &) = delete;
 
-WorkflowComponent *WorkflowEngine::findNode(WorkflowInstance *inst, int index) const
+private:
+    WorkflowEngine &engine;
+    std::streambuf *previous;
+};
+
+namespace
 {
-    if (inst == nullptr || inst->getRoot() == nullptr || index < 0)
+    const std::size_t kMaxLogLines = 500;
+
+    AssignmentStrategy *makeStrategy(const std::string &name)
+    {
+        if (name == "LeastLoaded")
+            return new LeastLoadedStrategy();
+        if (name == "RoleBased")
+            return new RoleBasedStrategy();
+        if (name == "MostExperience")
+            return new MostExperienceStrategy();
         return nullptr;
-
-    std::unique_ptr<WorkflowIterator> iter(inst->getRoot()->createIterator());
-    int i = 0;
-    for (iter->first(); !iter->isDone(); iter->next())
-    {
-        if (i++ == index)
-            return iter->currentItem();
     }
-    return nullptr;
-}
 
-int WorkflowEngine::countPeople(Participant *p) const
-{
-    if (p == nullptr)
-        return 0;
-    std::vector<Participant *> kids = p->getChildren();
-    if (kids.empty())
-        return 1;
-    int total = 0;
-    for (Participant *k : kids)
-        total += countPeople(k);
-    return total;
-}
-
-void WorkflowEngine::describePeople(Participant *p, int depth,
-                                    const std::map<std::string, int> &held,
-                                    std::vector<std::string> &out) const
-{
-    if (p == nullptr)
-        return;
-
-    std::string line = "  " + std::string(static_cast<std::size_t>(depth) * 2, ' ') + p->getName();
-    std::vector<Participant *> kids = p->getChildren();
-    if (kids.empty())
+    DataAdapter *makeAdapter(const std::string &name)
     {
-        auto it = held.find(p->getName());
-        int heldTasks;
-        if (it == held.end())
-            heldTasks = 0;
-        else
-            heldTasks = it->second;
-        line += "  (holds " + std::to_string(heldTasks) + " task(s))";
+        if (name == "claims")
+            return new ClaimsDataAdapter();
+        if (name == "hr")
+            return new HrDataAdapter();
+        return nullptr;
     }
-    out.push_back(line);
 
-    for (Participant *k : kids)
-        describePeople(k, depth + 1, held, out);
-}
+    bool stateIs(WorkflowComponent *c, const char *name)
+    {
+        return c != nullptr && c->getState() != nullptr && c->getState()->getName() == name;
+    }
+
+    // Pre-order walk (parent first, children left to right). This is the same
+    // order depthFirstIterator visits nodes, so row numbers match findNode().
+    void collectRows(WorkflowComponent *node, int depth, std::vector<TaskRow> &out)
+    {
+        if (node == nullptr)
+            return;
+
+        TaskRow row;
+        row.index = static_cast<int>(out.size());
+        row.depth = depth;
+        row.name = node->getName();
+        row.state = (node->getState() != nullptr) ? node->getState()->getName() : "Unknown";
+        row.isGroup = true;
+
+        if (Task *t = dynamic_cast<Task *>(node))
+        {
+            row.isGroup = false;
+            Participant *who = t->getAssignee();
+            row.assignee = (who != nullptr) ? who->getName() : "";
+            row.outcome = t->getOutcome();
+            row.condition = t->getBranchCondition();
+        }
+        out.push_back(row);
+
+        for (WorkflowComponent *child : node->getChildren())
+            collectRows(child, depth + 1, out);
+    }
+
+    // Finds the node at a row index using the Iterator pattern.
+    WorkflowComponent *findNode(WorkflowInstance *inst, int index)
+    {
+        if (inst == nullptr || inst->getRoot() == nullptr || index < 0)
+            return nullptr;
+
+        std::unique_ptr<WorkflowIterator> iter(inst->getRoot()->createIterator());
+        int i = 0;
+        for (iter->first(); !iter->isDone(); iter->next())
+        {
+            if (i++ == index)
+                return iter->currentItem();
+        }
+        return nullptr;
+    }
+
+    int countPeople(Participant *p)
+    {
+        if (p == nullptr)
+            return 0;
+        std::vector<Participant *> kids = p->getChildren();
+        if (kids.empty())
+            return 1;
+        int total = 0;
+        for (Participant *k : kids)
+            total += countPeople(k);
+        return total;
+    }
+
+    void describePeople(Participant *p, int depth,
+                        const std::map<std::string, int> &held,
+                        std::vector<std::string> &out)
+    {
+        if (p == nullptr)
+            return;
+
+        std::string line = "  " + std::string(static_cast<std::size_t>(depth) * 2, ' ') + p->getName();
+        std::vector<Participant *> kids = p->getChildren();
+        if (kids.empty())
+        {
+            auto it = held.find(p->getName());
+            line += "  (holds " + std::to_string(it == held.end() ? 0 : it->second) + " task(s))";
+        }
+        out.push_back(line);
+
+        for (Participant *k : kids)
+            describePeople(k, depth + 1, held, out);
+    }
+} // namespace
 
 // ============================================================================
 // Construction and helpers
@@ -146,6 +162,7 @@ WorkflowEngine::WorkflowEngine()
       adapterNames(),
       activityLog(),
       lastError(),
+      captured(),
       nextGlobalInstanceId(1)
 {
     logEvent("[Engine] TIVIDY WorkflowEngine initialized.");
@@ -168,22 +185,31 @@ bool WorkflowEngine::fail(const std::string &message)
     return false;
 }
 
+void WorkflowEngine::drainCaptured()
+{
+    const std::string text = captured.str();
+    captured.str("");
+    captured.clear();
+
+    std::istringstream lines(text);
+    std::string line;
+    while (std::getline(lines, line))
+    {
+        if (!line.empty())
+            logEvent(line);
+    }
+}
+
 WorkflowInstance *WorkflowEngine::findInstance(int id) const
 {
     auto it = instances.find(id);
-    if (it != instances.end())
-        return it->second.get();
-    else
-        return nullptr;
+    return (it != instances.end()) ? it->second.get() : nullptr;
 }
 
 EngineMediator *WorkflowEngine::findMediator(int id) const
 {
     auto it = mediators.find(id);
-    if (it != mediators.end())
-        return it->second.get();
-    else
-        return nullptr;
+    return (it != mediators.end()) ? it->second.get() : nullptr;
 }
 
 const std::vector<std::string> &WorkflowEngine::getActivityLog() const { return activityLog; }
@@ -200,6 +226,7 @@ bool WorkflowEngine::assembleBlueprint(const std::string &name,
                                        const std::vector<SubprocessSpec> &subprocesses,
                                        const std::vector<TaskSpec> &tasks)
 {
+    OutputCapture capture(*this);
     lastError.clear();
 
     if (name.empty())
@@ -209,6 +236,8 @@ bool WorkflowEngine::assembleBlueprint(const std::string &name,
     if (tasks.empty())
         return fail("Blueprint '" + name + "' needs at least one task.");
 
+    // The mediator treats a participant with no children as a person, so an
+    // empty department could be handed a task. Reject it here.
     for (const std::string &dept : departments)
     {
         bool hasMember = false;
@@ -265,6 +294,7 @@ std::vector<std::string> WorkflowEngine::getBlueprintNames() const
 
 int WorkflowEngine::spawnInstance(const std::string &blueprintName, const std::string &strategyName)
 {
+    OutputCapture capture(*this);
     lastError.clear();
 
     auto bp = blueprints.find(blueprintName);
@@ -284,8 +314,11 @@ int WorkflowEngine::spawnInstance(const std::string &blueprintName, const std::s
     WorkflowDefinition *def = bp->second.get();
     const int id = nextGlobalInstanceId++;
 
+    // Prototype: the instance owns a deep copy of the blueprint's task tree.
     std::unique_ptr<WorkflowInstance> inst = def->instantiate(id);
 
+    // Mediator: registers itself with every node, knows who can be assigned
+    // work (flattened participants) and owns the strategy.
     std::unique_ptr<EngineMediator> med(new EngineMediator());
     med->setRoot(inst->getRoot());
     med->setCandidates(def->getParticipants());
@@ -302,11 +335,13 @@ int WorkflowEngine::spawnInstance(const std::string &blueprintName, const std::s
 
 bool WorkflowEngine::removeInstance(int instanceId)
 {
+    OutputCapture capture(*this);
     lastError.clear();
 
     if (!findInstance(instanceId))
         return fail("Instance #" + std::to_string(instanceId) + " not found.");
 
+    // The mediator goes first: it points at the instance's task tree.
     mediators.erase(instanceId);
     instances.erase(instanceId);
     adapterNames.erase(instanceId);
@@ -333,10 +368,7 @@ std::string WorkflowEngine::getInstanceStatus(int instanceId) const
         return "Finished";
     if (med->isHalted())
         return "Halted";
-    if (stateIs(inst->getRoot(), "NotStarted"))
-        return "Not started";
-    else
-        return "Running";
+    return stateIs(inst->getRoot(), "NotStarted") ? "Not started" : "Running";
 }
 
 std::string WorkflowEngine::getInstanceLabel(int instanceId) const
@@ -355,6 +387,7 @@ std::string WorkflowEngine::getInstanceLabel(int instanceId) const
 
 bool WorkflowEngine::startInstance(int instanceId)
 {
+    OutputCapture capture(*this);
     lastError.clear();
 
     WorkflowInstance *inst = findInstance(instanceId);
@@ -371,6 +404,7 @@ bool WorkflowEngine::startInstance(int instanceId)
 
 bool WorkflowEngine::runTaskAction(int instanceId, int taskIndex, TaskAction action)
 {
+    OutputCapture capture(*this);
     lastError.clear();
 
     WorkflowInstance *inst = findInstance(instanceId);
@@ -435,6 +469,7 @@ bool WorkflowEngine::completeNextTask(int instanceId)
         return false;
     }
 
+    // Iterator pattern: first single task (no children) that is InProgress.
     int target = -1;
     int i = 0;
     std::unique_ptr<WorkflowIterator> iter(inst->getRoot()->createIterator());
@@ -450,6 +485,7 @@ bool WorkflowEngine::completeNextTask(int instanceId)
 
     if (target < 0)
     {
+        OutputCapture capture(*this);
         return fail("No task is in progress. Start the instance first, or it may be finished.");
     }
     return runTaskAction(instanceId, target, TaskAction::Complete);
@@ -475,6 +511,7 @@ std::vector<std::string> WorkflowEngine::getStrategyNames() const
 
 bool WorkflowEngine::setStrategy(int instanceId, const std::string &strategyName)
 {
+    OutputCapture capture(*this);
     lastError.clear();
 
     EngineMediator *med = findMediator(instanceId);
@@ -485,7 +522,7 @@ bool WorkflowEngine::setStrategy(int instanceId, const std::string &strategyName
     if (!strategy)
         return fail("Unknown strategy '" + strategyName + "'.");
 
-    med->setStrategy(strategy.release());
+    med->setStrategy(strategy.release()); // the mediator takes ownership
     logEvent("[Facade] Instance #" + std::to_string(instanceId) + " now uses the " +
              strategyName + " strategy.");
     return true;
@@ -510,6 +547,7 @@ std::vector<std::string> WorkflowEngine::getAdapterNames() const
 
 bool WorkflowEngine::setAdapter(int instanceId, const std::string &adapterName)
 {
+    OutputCapture capture(*this);
     lastError.clear();
 
     EngineMediator *med = findMediator(instanceId);
@@ -520,7 +558,7 @@ bool WorkflowEngine::setAdapter(int instanceId, const std::string &adapterName)
     if (!adapter)
         return fail("Unknown adapter '" + adapterName + "'.");
 
-    med->setDataAdapter(adapter.release());
+    med->setDataAdapter(adapter.release()); // the mediator takes ownership
     adapterNames[instanceId] = adapterName;
     logEvent("[Facade] Instance #" + std::to_string(instanceId) + " now uses the " +
              adapterName + " adapter.");
@@ -530,14 +568,12 @@ bool WorkflowEngine::setAdapter(int instanceId, const std::string &adapterName)
 std::string WorkflowEngine::getAdapterName(int instanceId) const
 {
     auto it = adapterNames.find(instanceId);
-    if (it != adapterNames.end())
-        return it->second;
-    else
-        return "none";
+    return (it != adapterNames.end()) ? it->second : "none";
 }
 
 bool WorkflowEngine::importData(int instanceId, const std::string &recordId)
 {
+    OutputCapture capture(*this);
     lastError.clear();
 
     WorkflowInstance *inst = findInstance(instanceId);
@@ -563,6 +599,7 @@ bool WorkflowEngine::importData(int instanceId, const std::string &recordId)
 
 bool WorkflowEngine::setPayloadValue(int instanceId, const std::string &key, const std::string &value)
 {
+    OutputCapture capture(*this);
     lastError.clear();
 
     WorkflowInstance *inst = findInstance(instanceId);
@@ -572,6 +609,7 @@ bool WorkflowEngine::setPayloadValue(int instanceId, const std::string &key, con
     if (key.empty())
         return fail("Payload key cannot be empty.");
 
+    // Through the mediator so it becomes an undoable SetDataCommand.
     if (!med->setData(&inst->getPayload(), key, value))
         return fail("Could not set '" + key + "'.");
 
@@ -589,6 +627,7 @@ std::map<std::string, std::string> WorkflowEngine::getPayloadMap(int instanceId)
 
 bool WorkflowEngine::undo(int instanceId)
 {
+    OutputCapture capture(*this);
     lastError.clear();
 
     EngineMediator *med = findMediator(instanceId);
@@ -603,6 +642,7 @@ bool WorkflowEngine::undo(int instanceId)
 
 bool WorkflowEngine::redo(int instanceId)
 {
+    OutputCapture capture(*this);
     lastError.clear();
 
     EngineMediator *med = findMediator(instanceId);
@@ -653,7 +693,7 @@ std::vector<std::string> WorkflowEngine::generateReport(int instanceId) const
         else if (r.state == "NotStarted")
             ++notStarted;
         else
-            ++stopped;
+            ++stopped; // Rejected or Cancelled
         if (!r.assignee.empty())
             ++held[r.assignee];
     }
@@ -746,19 +786,9 @@ std::vector<std::string> WorkflowEngine::generateSystemReport() const
     out.push_back("");
     std::string strategies, adapters;
     for (const std::string &s : getStrategyNames())
-    {
-        if (strategies.empty())
-            strategies += s;
-        else
-            strategies += ", " + s;
-    }
+        strategies += (strategies.empty() ? "" : ", ") + s;
     for (const std::string &a : getAdapterNames())
-    {
-        if (adapters.empty())
-            adapters += a;
-        else
-            adapters += ", " + a;
-    }
+        adapters += (adapters.empty() ? "" : ", ") + a;
     out.push_back("Available strategies: " + strategies);
     out.push_back("Available adapters:   " + adapters);
     out.push_back("Activity log entries: " + std::to_string(activityLog.size()));

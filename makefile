@@ -4,7 +4,8 @@ LDFLAGS  = -lftxui-component -lftxui-dom -lftxui-screen -lpthread
 
 # ---- test build ----
 TARGET = test_builder
-SRCS = testBuilder.cpp \
+SRCS = main.cpp \
+       WorkflowEngine.cpp \
        CustomDefinitionBuilder.cpp \
        WorkflowDefinitionBuilder.cpp \
        Director.cpp \
@@ -18,7 +19,30 @@ SRCS = testBuilder.cpp \
        Employee.cpp \
        Stage.cpp \
        ConcreteStages.cpp \
-       DepthFirstIterator.cpp
+       ConcreteStrategies.cpp \
+       DepthFirstIterator.cpp \
+       EngineMediator.cpp \
+       Command.cpp \
+       CommandHistory.cpp \
+       MacroCommand.cpp \
+       StartCommand.cpp \
+       CompleteCommand.cpp \
+       RejectCommand.cpp \
+       CancelCommand.cpp \
+       AssignTaskCommand.cpp \
+       StateTransitionCommand.cpp \
+       RecordDecisionCommand.cpp \
+       DataAdapter.cpp \
+       ClaimsDataAdapter.cpp \
+       ClaimsSystem.cpp \
+       HrDataAdapter.cpp \
+       LegacyHrSystem.cpp \
+       ReturnsDataAdapter.cpp \
+       ReturnsSystem.cpp \
+       ApprovalRequest.cpp \
+       ManagerHandler.cpp \
+       DirectorHandler.cpp \
+       CFOHandler.cpp
 OBJS = $(SRCS:.cpp=.o)
 
 all: $(TARGET)
@@ -39,7 +63,48 @@ valgrind: all
 # ---- TUI build ----
 # Remove ConcreteStrategies.cpp and EngineMediator.cpp from this filter
 # once the new facade (which uses them) is in.
-TUI_SRCS = $(filter-out test%.cpp %Handler.cpp ApprovalRequest.cpp ConcreteStrategies.cpp EngineMediator.cpp,$(wildcard *.cpp))
+# ---- TUI build ----
+# Include all source files without any exclusions
+TUI_SRCS = main.cpp \
+       WorkflowEngine.cpp \
+       CustomDefinitionBuilder.cpp \
+       WorkflowDefinitionBuilder.cpp \
+       Director.cpp \
+       WorkflowDefinition.cpp \
+       WorkflowInstance.cpp \
+       DataPayload.cpp \
+       WorkflowComponent.cpp \
+       Subprocess.cpp \
+       Task.cpp \
+       Department.cpp \
+       Employee.cpp \
+       Stage.cpp \
+       ConcreteStages.cpp \
+       ConcreteStrategies.cpp \
+       DepthFirstIterator.cpp \
+       EngineMediator.cpp \
+       Command.cpp \
+       CommandHistory.cpp \
+       MacroCommand.cpp \
+       StartCommand.cpp \
+       CompleteCommand.cpp \
+       RejectCommand.cpp \
+       CancelCommand.cpp \
+       AssignTaskCommand.cpp \
+       StateTransitionCommand.cpp \
+       RecordDecisionCommand.cpp \
+       DataAdapter.cpp \
+       ClaimsDataAdapter.cpp \
+       ClaimsSystem.cpp \
+       HrDataAdapter.cpp \
+       LegacyHrSystem.cpp \
+       ReturnsDataAdapter.cpp \
+       ReturnsSystem.cpp \
+       ApprovalRequest.cpp \
+       ManagerHandler.cpp \
+       DirectorHandler.cpp \
+       CFOHandler.cpp
+
 TUI_OBJS = $(TUI_SRCS:.cpp=.tui.o)
 
 tividy: $(TUI_OBJS)
@@ -50,9 +115,6 @@ tividy: $(TUI_OBJS)
 
 tui: tividy
 	./tividy
-
--include $(OBJS:.o=.d) $(TUI_OBJS:.o=.d)
-
 # Wildcards, so files that were filtered out earlier are cleaned too
 clean:
 	rm -f *.o *.d $(TARGET) tividy

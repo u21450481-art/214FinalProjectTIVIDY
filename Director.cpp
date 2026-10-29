@@ -1,39 +1,33 @@
-/**
- * @file Director.cpp
- * @brief Implementation of the Director class in the Builder pattern.
- *
- * ============================================================================
- * DESIGN ROLE & PATTERN PARTICIPATION:
- * - GoF Pattern: Builder Pattern (Participant: Director)
- * - Coordinates the construction steps on the abstract WorkflowDefinitionBuilder.
- * ============================================================================
- */
-
+// Director.cpp
 #include "Director.h"
-#include <iostream>
+#include <stdexcept>
 
 Director::Director(WorkflowDefinitionBuilder *b) : builder(b) {}
+void Director::setBuilder(WorkflowDefinitionBuilder *b) { builder = b; }
 
-Director::~Director()
+void Director::construct(const std::string &name, int version,
+                         const std::vector<std::string> &departments,
+                         const std::vector<EmployeeSpec> &employees,
+                         const std::vector<SubprocessSpec> &subprocesses,
+                         const std::vector<TaskSpec> &tasks)
 {
-    // Aggregation only: Director does not own the builder's memory
-    builder = nullptr;
-}
-
-void Director::setBuilder(WorkflowDefinitionBuilder *b)
-{
-    builder = b;
-}
-
-void Director::construct()
-{
-    if (builder == nullptr)
+    if (!builder)
+        throw std::logic_error("Director: no builder set.");
+    try
     {
-        std::cerr << "[Director] Error: Cannot Construct() because no builder is set!" << std::endl;
-        return;
+        builder->reset(name, version);
+        for (const auto &d : departments)
+            builder->addDepartment(d);
+        for (const auto &e : employees)
+            builder->addEmployee(e.name, e.department);
+        for (const auto &s : subprocesses)
+            builder->addSubprocess(s.name, s.parent);
+        for (const auto &t : tasks)
+            builder->addTask(t.name, t.parent, t.priority, t.branchCondition, "");
     }
-    std::cout << "[Director] Directing step-by-step workflow definition build..." << std::endl;
-    builder->reset();
-    builder->buildParticipants();
-    builder->buildTaskTree();
+    catch (...)
+    {
+        delete builder->getResult(); // discard the half-built product
+        throw;
+    }
 }
