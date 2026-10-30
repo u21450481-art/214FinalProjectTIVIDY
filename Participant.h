@@ -5,6 +5,8 @@
 #include <vector>
 using namespace std;
 
+class Task;
+
 class Participant
 {
 
@@ -19,6 +21,10 @@ public:
     virtual std::string getRole() const { return ""; }
     virtual int getWorkload() const { return 0; }
     virtual int getExperience() const { return 0; }
+
+    // Hooks used when work is handed out. Only participants that can hold tasks override them.
+    virtual void assignTask(Task *t) {}
+    virtual void unassignTask(Task *t) {}
 };
 
 #endif

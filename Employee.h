@@ -9,14 +9,16 @@
 
 class Employee : public Participant{
     std::vector<Task*> tasks;
+    std::string name;
     std::string role;
     int experience;
-    int workload;
 
 public:
-    Employee(std::string, int);
+    Employee(std::string name, std::string role, int experience);
     ~Employee();
-    void assignTask(Task*);
+    std::string getName() override;
+    void assignTask(Task*) override;
+    void unassignTask(Task*) override;
     std::string getRole() const override;
     int getExperience() const override;
     int getWorkload() const override;

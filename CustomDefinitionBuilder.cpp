@@ -60,7 +60,7 @@ void CustomDefinitionBuilder::addEmployee(const std::string &empName, const std:
         dept = it->second;
     }
 
-    Employee *emp = new Employee(empName);
+    Employee *emp = new Employee(empName, "", 0);
     if (dept)
         dept->add(emp);
     else
@@ -100,7 +100,7 @@ void CustomDefinitionBuilder::addTask(const std::string &taskName, const std::st
     if (parent == subprocessRegistry.end())
         throw std::invalid_argument("Unknown parent subprocess: " + target);
 
-    Task *task = new Task(priority, deadline, taskName);
+    Task *task = new Task(priority, deadline, taskName, "");
     task->setBranchCondition(branchCondition);
     parent->second->add(task);
     TLOG("  + [Builder] Task '" << taskName << "' inside '" << target << "'");
