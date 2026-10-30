@@ -1,26 +1,23 @@
 #include "DirectorHandler.h"
-#include <iostream>
+#include "Log.h"
 
 DirectorHandler::DirectorHandler(AuthorityLevel level) 
     : clearanceLevel(level) {}
 
 void DirectorHandler::handleRequest(ApprovalRequest& request) {
-    // Is Director's clearance is sufficient for the request?
-    if (this->clearanceLevel >= request.getLevel()) {
-        std::cout << "[Chain of Responsibility] DirectorHandler approved request for task: '" 
-        << request.getTaskName() << "'.\n";
-        request.setStatus(ApprovalStatus::APPROVED);
+    if (clearanceLevel >= request.requiredLevel) {
+        TLOG("[Chain of Responsibility] DirectorHandler approved request for task: '"
+             << request.taskName << "'.");
+        request.isApproved = true;
     } 
-    //If clearance is insufficient, escalate 
     else if (successor != nullptr) {
-        std::cout << "[Chain of Responsibility] Request for '" << request.getTaskName() 
-        << "' exceeds Director clearance. Escalating to successor...\n";
+        TLOG("[Chain of Responsibility] Request for '" << request.taskName
+             << "' exceeds Director clearance. Escalating to successor...");
         successor->handleRequest(request);
     } 
-    // No higher authority handler exists in the chain
     else {
-        std::cout << "[Chain of Responsibility] Request for '" << request.getTaskName() 
-        << "' REJECTED: Exceeds authority and no further escalation handler exists.\n";
-        request.setStatus(ApprovalStatus::REJECTED);
+        TLOG("[Chain of Responsibility] Request for '" << request.taskName
+             << "' REJECTED: Exceeds authority and no further escalation handler exists.");
+        request.isApproved = false;
     }
 }

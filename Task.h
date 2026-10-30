@@ -13,11 +13,12 @@ class Task : public WorkflowComponent
     int priority;
     std::string deadline;
     std::string outcome; // the decision stored on the task, for example "approved"
+    std::string requiredRole;
 
     std::string branchCondition;
 
 public:
-    Task(int priority, std::string deadline, std::string name);
+    Task(int priority, std::string deadline, std::string name, std::string requiredRole);
     ~Task();
     std::string getName();
     void execute();
@@ -30,6 +31,11 @@ public:
     void setBranchCondition(const std::string &c);
     std::string getBranchCondition() const;
     WorkflowComponent *clone() const override;
+
+    const std::string &getRequiredRole() const;
+
+    // asks the strategy who should do this task; returns the command that assigns them, or nullptr
+    Command *makeAssignCommand(AssignmentStrategy &s, const std::vector<Participant *> &pool) override;
 };
 
 #endif

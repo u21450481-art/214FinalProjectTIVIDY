@@ -1,11 +1,4 @@
-/**
- * @file CustomDefinitionBuilder.cpp
- * @brief Implementation of CustomDefinitionBuilder.
- */
-
 #include "CustomDefinitionBuilder.h"
-#include <iostream>
-#include <memory>
 #include <stdexcept>
 
 #include "Log.h"
@@ -14,20 +7,10 @@
 #include "Department.h"
 #include "Employee.h"
 
-CustomDefinitionBuilder::CustomDefinitionBuilder() : WorkflowDefinitionBuilder()
+void CustomDefinitionBuilder::requireBuild() const
 {
-    reset();
-}
-
-CustomDefinitionBuilder::~CustomDefinitionBuilder()
-{
-    subprocessRegistry.clear();
-    departmentRegistry.clear();
-}
-
-void CustomDefinitionBuilder::reset()
-{
-    reset("Custom_Workflow", 1);
+    if (definition == nullptr)
+        throw std::logic_error("No active blueprint: call reset(name, version) first.");
 }
 
 void CustomDefinitionBuilder::reset(const std::string &name, int version)
@@ -77,7 +60,7 @@ void CustomDefinitionBuilder::addEmployee(const std::string &empName, const std:
         dept = it->second;
     }
 
-    Employee *emp = new Employee(empName);
+    Employee *emp = new Employee(empName, "", 0);
     if (dept)
         dept->add(emp);
     else
@@ -117,7 +100,7 @@ void CustomDefinitionBuilder::addTask(const std::string &taskName, const std::st
     if (parent == subprocessRegistry.end())
         throw std::invalid_argument("Unknown parent subprocess: " + target);
 
-    Task *task = new Task(priority, deadline, taskName);
+    Task *task = new Task(priority, deadline, taskName, "");
     task->setBranchCondition(branchCondition);
     parent->second->add(task);
     TLOG("  + [Builder] Task '" << taskName << "' inside '" << target << "'");

@@ -1,56 +1,38 @@
-/**
- * @file Director.h
- * @brief Director class that orchestrates the step-by-step Builder sequence.
- *
- * ============================================================================
- * DESIGN ROLE & PATTERN PARTICIPATION:
- * - GoF Pattern: Builder Pattern (Participant: Director)
- * - Role Explanation:
- *   Encapsulates the exact order in which construction steps must be called
- *   (reset -> buildParticipants -> buildTaskTree) to guarantee a valid,
- *   complete WorkflowDefinition. The Director works with any ConcreteBuilder
- *   via the abstract WorkflowDefinitionBuilder interface, allowing TIVIDY to
- *   switch between Industry 1 and Industry 2 builders seamlessly.
- * ============================================================================
- */
-
+// Director.h
 #ifndef DIRECTOR_H
 #define DIRECTOR_H
-
+#include <string>
+#include <vector>
 #include "WorkflowDefinitionBuilder.h"
 
-/**
- * @class Director
- * @brief Directs a WorkflowDefinitionBuilder to construct a WorkflowDefinition in a standard sequence.
- */
-class Director {
-private:
-    /** @brief Pointer to the active builder (aggregated; Director does not own memory). */
-    WorkflowDefinitionBuilder* builder;
-
-public:
-    /**
-     * @brief Constructs a Director with an optional initial builder.
-     * @param b Pointer to a WorkflowDefinitionBuilder (defaults to nullptr).
-     */
-    Director(WorkflowDefinitionBuilder* b = nullptr);
-
-    /**
-     * @brief Destructor. Does not delete the aggregated builder.
-     */
-    ~Director();
-
-    /**
-     * @brief Sets or swaps the active builder used by the Director.
-     * @param b Pointer to the new WorkflowDefinitionBuilder.
-     */
-    void setBuilder(WorkflowDefinitionBuilder* b);
-
-    /**
-     * @brief Executes the full step-by-step construction sequence on the active builder.
-     * Calls reset(), buildParticipants(), and buildTaskTree() in strict order.
-     */
-    void Construct();
+struct EmployeeSpec
+{
+    std::string name;
+    std::string department;
+};
+struct SubprocessSpec
+{
+    std::string name;
+    std::string parent;
+};
+struct TaskSpec
+{
+    std::string name;
+    std::string parent;
+    int priority;
+    std::string branchCondition;
 };
 
-#endif // DIRECTOR_H
+class Director
+{
+    WorkflowDefinitionBuilder *builder; // not owned
+public:
+    explicit Director(WorkflowDefinitionBuilder *b = nullptr);
+    void setBuilder(WorkflowDefinitionBuilder *b);
+    void construct(const std::string &name, int version,
+                   const std::vector<std::string> &departments,
+                   const std::vector<EmployeeSpec> &employees,
+                   const std::vector<SubprocessSpec> &subprocesses,
+                   const std::vector<TaskSpec> &tasks);
+};
+#endif

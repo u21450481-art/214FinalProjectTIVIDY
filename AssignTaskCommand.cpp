@@ -20,7 +20,10 @@ bool AssignTaskCommand::execute(){
     }
 
     previous = task->getAssignee();
+    if (previous != nullptr)
+        previous->unassignTask(task);
     task->setAssignee(assignee);
+    assignee->assignTask(task); // so the person's workload counts this task
     executed = true;
     return true;
 }
@@ -30,7 +33,10 @@ bool AssignTaskCommand::undo(){
     if(!executed){
         return false;
     }
+    assignee->unassignTask(task);
     task->setAssignee(previous);
+    if (previous != nullptr)
+        previous->assignTask(task);
     executed = false;
     return true;
 }

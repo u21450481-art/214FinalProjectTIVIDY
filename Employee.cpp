@@ -1,29 +1,50 @@
 #include "Employee.h"
+#include "Log.h"
 
-#include <iostream>
+#include <algorithm>
 
-Employee::Employee(std::string name): employeeName(name){}
+Employee::Employee(std::string name, std::string role, int experience): name(name), role(role), experience(experience){}
 
 Employee::~Employee(){}
 
+std::string Employee::getRole() const{
+    return role;
+}
+
+int Employee::getExperience() const{
+    return experience;
+}
 std::string Employee::getName(){
-    return employeeName;
+    return name;
+}
+
+// workload = tasks that are not finished yet, so it drops when work is completed, rejected or cancelled
+int Employee::getWorkload() const{
+    int active = 0;
+    for (auto* t : tasks) {
+        if (!t->getState()->isFinished()) active++;
+    }
+    return active;
 }
 void Employee::assignTask(Task* t){
-    if(t) tasks.push_back(t);
+    if (!t) return;
+    if (std::find(tasks.begin(), tasks.end(), t) == tasks.end()) tasks.push_back(t);
     t->setAssignee(this);
+}
+
+void Employee::unassignTask(Task* t){
+    tasks.erase(std::remove(tasks.begin(), tasks.end(), t), tasks.end());
 }
 
 void Employee::Operation(){
     if(tasks.empty()){
-        std::cout << "No tasks assigned yet" << std::endl;
+        TLOG("No tasks assigned yet");
         return;
     }
 
     for (auto* c : tasks) {
-        std::cout << "Performing task: " << c->getName() << std::endl;
+        TLOG("Performing task: " << c->getName());
     };
 }
-
 
 

@@ -11,6 +11,7 @@
  */
 
 #include "DataPayload.h"
+#include "Log.h"
 
 DataPayload::DataPayload() : values() {}
 
@@ -47,13 +48,13 @@ const std::map<std::string, std::string>& DataPayload::getAll() const {
 }
 
 void DataPayload::printPayload() const {
-    std::cout << "=== DataPayload Contents ===" << std::endl;
+    TLOG("=== DataPayload Contents ===");
     if (values.empty()) {
-        std::cout << "  (empty)" << std::endl;
+        TLOG("  (empty)");
         return;
     }
     for (std::map<std::string, std::string>::const_iterator it = values.begin();
          it != values.end(); ++it) {
-        std::cout << "  [" << it->first << "] = " << it->second << std::endl;
+        TLOG("  [" << it->first << "] = " << it->second);
     }
 }

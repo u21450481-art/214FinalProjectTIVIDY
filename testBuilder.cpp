@@ -4,9 +4,9 @@
  *        WorkflowInstance, and DataPayload.
  */
 
-#include <iostream>
 #include <cassert>
 #include <memory>
+#include "Log.h"
 
 #include "CustomDefinitionBuilder.h"
 #include "Director.h"
@@ -22,9 +22,9 @@
 
 void printHeader(const std::string &title)
 {
-    std::cout << "\n============================================================" << std::endl;
-    std::cout << "  " << title << std::endl;
-    std::cout << "============================================================" << std::endl;
+    TLOG("\n============================================================");
+    TLOG("  " << title);
+    TLOG("============================================================");
 }
 
 int main()
@@ -41,12 +41,12 @@ int main()
 
     std::unique_ptr<WorkflowDefinition> defaultDef(builder.getResult());
     assert(defaultDef != nullptr);
-    std::cout << "[PASS] Director constructed definition: '" << defaultDef->getName()
-              << "' (version" << defaultDef->getVersion() << ")" << std::endl;
+    TLOG("[PASS] Director constructed definition: '" << defaultDef->getName()
+         << "' (version" << defaultDef->getVersion() << ")");
 
     // test ownership handover (calling getResult() again right away should return nullptr)
     assert(builder.getResult() == nullptr);
-    std::cout << "[PASS] Builder ownership transfer verified (internal pointer reset to nullptr)." << std::endl;
+    TLOG("[PASS] Builder ownership transfer verified (internal pointer reset to nullptr).");
 
     // industry 1 — Retail "Return_Item"
 
@@ -83,8 +83,8 @@ int main()
     assert(retailDef->getName() == "Retail_Return_Item_Updated");
     retailDef->setName("Retail_Return_Item"); // restore name
 
-    std::cout << "[PASS] Retail Definition built. Registered top-level participants: "
-              << retailDef->getParticipants().size() << std::endl;
+    TLOG("[PASS] Retail Definition built. Registered top-level participants: "
+         << retailDef->getParticipants().size());
 
     // industry 2 — Banking "Bank_Process_Loan" Using Same Builder
 
@@ -108,7 +108,7 @@ int main()
     WorkflowDefinition *bankDef = builder.getResult();
     assert(bankDef != nullptr);
     assert(bankDef->getName() == "Bank_Process_Loan");
-    std::cout << "[PASS] Banking Definition built with the exact same builder class!" << std::endl;
+    TLOG("[PASS] Banking Definition built with the exact same builder class!");
 
     // TEST 4: Spawning Isolated WorkflowInstances (Prototype / instantiate)
 
@@ -128,11 +128,11 @@ int main()
     {
         assert(retailInst1->getRoot() != retailDef->getRoot());
         assert(retailInst1->getRoot() != retailInst2->getRoot());
-        std::cout << "[PASS] Prototype Deep Copy Verified: Instance roots have distinct memory addresses!" << std::endl;
+        TLOG("[PASS] Prototype Deep Copy Verified: Instance roots have distinct memory addresses!");
     }
     else
     {
-        std::cout << "[INFO] Root pointer is currently nullptr" << std::endl;
+        TLOG("[INFO] Root pointer is currently nullptr");
     }
 
     // TEST 5: DataPayload CRUD Operations & Runtime Isolation Across Instances
@@ -161,10 +161,10 @@ int main()
     assert(payload1.has("tempFlag") == false);
     assert(payload1.remove("tempFlag") == false); // already removed
 
-    std::cout << "\n--- Retail Instance #1 Payload ---" << std::endl;
+    TLOG("\n--- Retail Instance #1 Payload ---");
     payload1.printPayload();
 
-    std::cout << "\n--- Retail Instance #2 Payload ---" << std::endl;
+    TLOG("\n--- Retail Instance #2 Payload ---");
     payload2.printPayload();
 
     // DataPayload Copy Constructor, clear()
@@ -173,7 +173,7 @@ int main()
     copiedPayload.clear();
     assert(copiedPayload.getAll().empty() == true);
     assert(payload1.has("refundAmount") == true); // og must be untouched
-    std::cout << "[PASS] DataPayload CRUD, copy constructor, and instance isolation verified!" << std::endl;
+    TLOG("[PASS] DataPayload CRUD, copy constructor, and instance isolation verified!");
 
     // TEST 6: WorkflowInstance Lifecycle Methods (start / stop)
 
