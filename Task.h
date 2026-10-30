@@ -33,6 +33,9 @@ public:
     WorkflowComponent *clone() const override;
 
     const std::string &getRequiredRole() const;
+
+    // asks the strategy who should do this task; returns the command that assigns them, or nullptr
+    Command *makeAssignCommand(AssignmentStrategy &s, const std::vector<Participant *> &pool) override;
 };
 
 #endif

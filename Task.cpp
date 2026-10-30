@@ -1,6 +1,10 @@
 #include "Task.h"
 #include "WorkflowComponent.h"
 #include "ConcreteStages.h"
+#include "AssignmentStrategy.h"
+#include "AssignTaskCommand.h"
+
+#include <iostream>
 
 #include <string>
 
@@ -9,6 +13,9 @@ Task::Task(int priority, std::string deadline, std::string name, std::string rol
 
 Task::~Task()
 {
+    // the person must not keep a pointer to a task that no longer exists
+    if (assignee)
+        assignee->unassignTask(this);
 }
 
 std::string Task::getName()
@@ -43,6 +50,18 @@ std::string Task::getOutcome()
 }
 
 const std::string & Task::getRequiredRole() const { return requiredRole; }
+
+Command *Task::makeAssignCommand(AssignmentStrategy &s, const std::vector<Participant *> &pool)
+{
+    Participant *chosen = s.assign(*this, pool);
+    if (!chosen)
+    {
+        std::cout << "[Assignment] The " << s.getName() << " strategy found nobody for '" << taskName << "'.\n";
+        return nullptr;
+    }
+    std::cout << "[Assignment] " << s.getName() << " strategy chose for '" << taskName << "'.\n";
+    return new AssignTaskCommand(this, chosen);
+}
 
 void Task::setBranchCondition(const std::string &c) { branchCondition = c; }
 std::string Task::getBranchCondition() const { return branchCondition; }

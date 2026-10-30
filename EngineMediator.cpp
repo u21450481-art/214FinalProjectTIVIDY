@@ -302,18 +302,10 @@ void EngineMediator::assign(WorkflowComponent *c)
         std::cout << "[Mediator] No assignment strategy set; skipping assignment.\n";
         return;
     }
-    Task *task = dynamic_cast<Task *>(c); // only single tasks are given to a person, groups are not
-    if (!task)
-        return;
-
-    Participant *chosen = strategy->assign(*task, candidates);
-    if (!chosen)
-    {
-        std::cout << "[Mediator] The " << strategy->getName() << " strategy found nobody.\n";
-        return;
-    }
-    std::cout << "[Mediator] Assigning using " << strategy->getName() << " strategy.\n";
-    history.run(new AssignTaskCommand(task, chosen));
+    // the component decides: a Task returns an assign command, a group returns nullptr (no type check needed)
+    Command *cmd = c->makeAssignCommand(*strategy, candidates);
+    if (cmd)
+        history.run(cmd);
 }
 
 void EngineMediator::startComponent(WorkflowComponent *c)
