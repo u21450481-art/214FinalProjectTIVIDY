@@ -22,25 +22,49 @@ static void loadDemos(WorkflowEngine &e)
                         {"Customer Service", "Warehouse", "Inventory Control",
                          "Supplier Relations", "Management", "Finance"},
                         {{"Lerato", "Customer Service"},
+                         {"Tshego", "Customer Service"},
                          {"Sipho", "Warehouse"},
+                         {"Luthando", "Warehouse"},
                          {"Zanele", "Inventory Control"},
+                         {"Tatenda", "Inventory Control"},
                          {"Johann", "Supplier Relations"},
+                         {"Tanaka", "Supplier Relations"},
                          {"Thabo", "Management"},
-                         {"Naledi", "Finance"}},
+                         {"Moeletsi", "Management"},
+                         {"Naledi", "Finance"},
+                         {"Bowdene", "Finance"},
+                         {"Karabo", "Finance"}},
                         {{"Intake", "ROOT"},
                          {"Inspection", "ROOT"},
                          {"Resolution", "ROOT"},
+                         {"Restock", "Resolution"},
+                         {"Damage Handling", "Resolution"},
+                         {"Decline Return", "Resolution"},
+                         {"Refund Approval", "ROOT"},
                          {"Settlement", "ROOT"}},
-                        {{"Verify Receipt & Policy", "Intake", 1, ""},
-                         {"Inspect Garment", "Inspection", 1, ""},
+                        {{"Capture Return Request", "Intake", 1, ""},
+                         {"Verify Proof of Purchase", "Intake", 1, ""},
+                         {"Check Return Window and Policy", "Intake", 1, ""},
 
-                         // The three conditional branches flattened for a faster demo
-                         {"Restock Inventory", "Resolution", 1, "itemCondition=Intact"},
-                         {"Log Damaged Goods", "Resolution", 1, "itemCondition=Damaged"},
-                         {"Decline & Notify", "Resolution", 1, "itemCondition=Unacceptable"},
+                         {"Inspect Item", "Inspection", 1, ""},
+                         {"Record Condition", "Inspection", 1, ""},
 
-                         {"Approve & Issue Refund", "Settlement", 1, ""},
-                         {"Close Ticket", "ROOT", 1, ""}});
+                         {"Restock Shelf", "Restock", 1, "itemCondition=Intact"},
+                         {"Update Inventory", "Restock", 1, "itemCondition=Intact"},
+
+                         {"Log Damage Report", "Damage Handling", 1, "itemCondition=Damaged"},
+                         {"Lodge Supplier Claim", "Damage Handling", 1, "itemCondition=Damaged"},
+
+                         {"Reject Return", "Decline Return", 1, "itemCondition=Unacceptable"},
+                         {"Notify Customer", "Decline Return", 1, "itemCondition=Unacceptable"},
+
+                         {"Approve Refund", "Refund Approval", 1, ""},
+
+                         {"Issue Refund", "Settlement", 1, ""},
+                         {"Update Customer Record", "Settlement", 1, ""},
+                         {"Send Confirmation", "Settlement", 1, ""},
+
+                         {"Close Return", "ROOT", 1, ""}});
 
     e.assembleBlueprint("Bank_Process_Loan", 1,
                         {"Credit Underwriting"},
@@ -278,29 +302,63 @@ int main()
 
     auto startBtn = makeButton("Start", Color::Green, [&]
                                { int id = needInstance(); if (id < 0) return;
-                                 done(engine.startInstance(id), "Instance started."); });
+                                 bool ok = engine.startInstance(id);
+                                 done(ok, "Instance started.");
+                                 if (ok) {
+                                     std::vector<TaskRow> rows = engine.getTaskRows(id);
+                                     for (int i = 0; i < (int)rows.size(); i++)
+                                         if (!rows[i].isGroup && rows[i].state == "InProgress") { taskSel = i; break; }
+                                 } });
+
     auto completeBtn = makeButton("Complete", Color::Cyan, [&]
                                   { int id = needInstance(); if (id < 0) return;
-                                bool ok = engine.completeTask(id, taskSel);
-                                done(ok, "Task completed.");
+                                    bool ok = engine.completeTask(id, taskSel);
+                                    done(ok, "Task completed.");
+                                    if (ok) {
+                                        std::vector<TaskRow> rows = engine.getTaskRows(id);
+                                        for (int i = 0; i < (int)rows.size(); i++)
+                                            if (!rows[i].isGroup && rows[i].state == "InProgress") { taskSel = i; break; }
+                                    } });
+
+    auto rejectBtn = makeButton("Reject", Color::Red, [&]
+                                { int id = needInstance(); if (id < 0) return;
+                                  bool ok = engine.rejectTask(id, taskSel);
+                                  done(ok, "Task rejected.");
+                                  if (ok) {
+                                      std::vector<TaskRow> rows = engine.getTaskRows(id);
+                                      for (int i = 0; i < (int)rows.size(); i++)
+                                          if (!rows[i].isGroup && rows[i].state == "InProgress") { taskSel = i; break; }
+                                  } });
+
+    auto cancelBtn = makeButton("Cancel", Color::Magenta, [&]
+                                { int id = needInstance(); if (id < 0) return;
+                                  bool ok = engine.cancelTask(id, taskSel);
+                                  done(ok, "Task cancelled.");
+                                  if (ok) {
+                                      std::vector<TaskRow> rows = engine.getTaskRows(id);
+                                      for (int i = 0; i < (int)rows.size(); i++)
+                                          if (!rows[i].isGroup && rows[i].state == "InProgress") { taskSel = i; break; }
+                                  } });
+
+    auto undoBtn = makeButton("Undo", Color::Yellow, [&]
+                              { int id = needInstance(); if (id < 0) return;
+                                bool ok = engine.undo(id);
+                                done(ok, "Undone.");
                                 if (ok) {
                                     std::vector<TaskRow> rows = engine.getTaskRows(id);
                                     for (int i = 0; i < (int)rows.size(); i++)
                                         if (!rows[i].isGroup && rows[i].state == "InProgress") { taskSel = i; break; }
                                 } });
-    auto rejectBtn = makeButton("Reject", Color::Red, [&]
-                                { int id = needInstance(); if (id < 0) return;
-                                  done(engine.rejectTask(id, taskSel), "Task rejected."); });
-    auto cancelBtn = makeButton("Cancel", Color::Magenta, [&]
-                                { int id = needInstance(); if (id < 0) return;
-                                  done(engine.cancelTask(id, taskSel), "Task cancelled."); });
-    auto undoBtn = makeButton("Undo", Color::Yellow, [&]
-                              { int id = needInstance(); if (id < 0) return;
-                                done(engine.undo(id), "Undone."); });
+
     auto redoBtn = makeButton("Redo", Color::Yellow, [&]
                               { int id = needInstance(); if (id < 0) return;
-                                done(engine.redo(id), "Redone."); });
-
+                                bool ok = engine.redo(id);
+                                done(ok, "Redone.");
+                                if (ok) {
+                                    std::vector<TaskRow> rows = engine.getTaskRows(id);
+                                    for (int i = 0; i < (int)rows.size(); i++)
+                                        if (!rows[i].isGroup && rows[i].state == "InProgress") { taskSel = i; break; }
+                                } });
     auto strategyToggle = Toggle(&strategyNames, &strategySel);
     auto setStrategyBtn = makeButton("Apply to instance", Color::BlueLight, [&]
                                      { int id = needInstance(); if (id < 0) return;
@@ -371,13 +429,17 @@ int main()
         Elements payloadLines, historyLines;
         for (const auto &kv : payload)
             payloadLines.push_back(hbox({text(kv.first) | color(Color::Yellow), text(" = "), text(kv.second)}));
-        
+
         // Expanded history view to show more lines
-        size_t from = history.size() > 25 ? history.size() - 25 : 0;
-        for (size_t i = from; i < history.size(); ++i) {
+        // Lowering this to 14 acts as an auto-scroll, keeping the newest items visible
+        size_t from = history.size() > 14 ? history.size() - 14 : 0;
+        for (size_t i = from; i < history.size(); ++i)
+        {
             Element h = text(history[i]);
-            if (history[i].rfind("(undone)", 0) == 0) h = h | dim;
-            else h = h | color(Color::GreenLight);
+            if (history[i].rfind("(undone)", 0) == 0)
+                h = h | dim;
+            else
+                h = h | color(Color::GreenLight);
             historyLines.push_back(h);
         }
 
@@ -414,7 +476,7 @@ int main()
                 vbox({
                     panel("Payload", vbox(std::move(payloadLines)) | vscroll_indicator | frame, Color::Magenta) | size(HEIGHT, EQUAL, 10),
                     panel("History", vbox(std::move(historyLines)) | vscroll_indicator | frame, Color::GreenLight) | flex,
-                }) | size(WIDTH, EQUAL, 40),
+                }) | size(WIDTH, EQUAL, 65),
             }) | flex,
         }); });
 

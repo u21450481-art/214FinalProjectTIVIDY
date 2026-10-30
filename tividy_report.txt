@@ -1,43 +1,127 @@
-TIVIDY SYSTEM REPORT
-
-BLUEPRINTS (2)
-  Bank_Process_Loan v1: 3 tasks, 1 people
-  Retail_Return_Item v1: 4 tasks, 3 people
-
-INSTANCES (1)
-  #1  Bank_Process_Loan v1  [Not started]  strategy=LeastLoaded  adapter=none
-
-Available strategies: LeastLoaded, RoleBased, MostExperience
-Available adapters:   claims, hr
-Activity log entries: 4
-
-----------------------------------------
-INSTANCE #1: Bank_Process_Loan v1
-  Status:    Not started
+INSTANCE #1: Retail_Return
+  Status:    Finished
   Strategy:  LeastLoaded
   Adapter:   none
-  Progress:  0/3 tasks complete (0 in progress, 3 not started, 0 rejected/cancelled)
+  Progress:  16/16 tasks complete
 
 TASKS
-  Bank_Process_Loan_Root  [NotStarted]
-    Credit_Assessment  [NotStarted]
-      Credit Bureau Check  [NotStarted]
-      Sign-Off  [NotStarted]  if creditStatus=Approved
-    Verify FICA  [NotStarted]
+  Retail_Return_Root  [Complete]
+    Intake  [Complete]
+      Capture Return Request  [Complete]  -> Lerato
+      Verify Proof of Purchase  [Complete]  -> Lerato
+      Check Return Window and Policy  [Complete]  -> Lerato
+    Inspection  [Complete]
+      Inspect Item  [Complete]  -> Lerato
+      Record Condition  [Complete]  -> Lerato
+    Resolution  [Complete]
+      Restock  [Complete]
+        Restock Shelf  [Complete]  -> Lerato  if itemCondition=Intact
+        Update Inventory  [Complete]  -> Lerato  if itemCondition=Intact
+      Damage Handling  [Complete]
+        Log Damage Report  [Complete]  -> Lerato  if itemCondition=Damaged
+        Lodge Supplier Claim  [Complete]  -> Lerato  if itemCondition=Damaged
+      Decline Return  [Complete]
+        Reject Return  [Complete]  -> Lerato  if itemCondition=Unacceptable
+        Notify Customer  [Complete]  -> Lerato  if itemCondition=Unacceptable
+    Refund Approval  [Complete]
+      Approve Refund  [Complete]  -> Lerato
+    Settlement  [Complete]
+      Issue Refund  [Complete]  -> Lerato
+      Update Customer Record  [Complete]  -> Lerato
+      Send Confirmation  [Complete]  -> Lerato
+    Close Return  [Complete]  -> Lerato
 
 PAYLOAD
   (empty)
 
-COMMAND HISTORY (0)
-  (none)
+COMMAND HISTORY
+  Start 'Retail_Return_Root' (NotStarted -> Complete)
+  Start 'Intake' (NotStarted -> Complete)
+  Assign 'Capture Return Request' to Lerato
+  Start 'Capture Return Request' (NotStarted -> Complete)
+  Complete 'Capture Return Request' (InProgress -> Complete)
+  Assign 'Verify Proof of Purchase' to Lerato
+  Start 'Verify Proof of Purchase' (NotStarted -> Complete)
+  Complete 'Verify Proof of Purchase' (InProgress -> Complete)
+  Assign 'Check Return Window and Policy' to Lerato
+  Start 'Check Return Window and Policy' (NotStarted -> Complete)
+  Complete 'Check Return Window and Policy' (InProgress -> Complete)
+  Complete 'Intake' (InProgress -> Complete)
+  Start 'Inspection' (NotStarted -> Complete)
+  Assign 'Inspect Item' to Lerato
+  Start 'Inspect Item' (NotStarted -> Complete)
+  Complete 'Inspect Item' (InProgress -> Complete)
+  Assign 'Record Condition' to Lerato
+  Start 'Record Condition' (NotStarted -> Complete)
+  Complete 'Record Condition' (InProgress -> Complete)
+  Complete 'Inspection' (InProgress -> Complete)
+  Start 'Resolution' (NotStarted -> Complete)
+  Start 'Restock' (NotStarted -> Complete)
+  Assign 'Restock Shelf' to Lerato
+  Start 'Restock Shelf' (NotStarted -> Complete)
+  Complete 'Restock Shelf' (InProgress -> Complete)
+  Assign 'Update Inventory' to Lerato
+  Start 'Update Inventory' (NotStarted -> Complete)
+  Complete 'Update Inventory' (InProgress -> Complete)
+  Complete 'Restock' (InProgress -> Complete)
+  Start 'Damage Handling' (NotStarted -> Complete)
+  Assign 'Log Damage Report' to Lerato
+  Start 'Log Damage Report' (NotStarted -> Complete)
+  Complete 'Log Damage Report' (InProgress -> Complete)
+  Assign 'Lodge Supplier Claim' to Lerato
+  Start 'Lodge Supplier Claim' (NotStarted -> Complete)
+  Complete 'Lodge Supplier Claim' (InProgress -> Complete)
+  Complete 'Damage Handling' (InProgress -> Complete)
+  Start 'Decline Return' (NotStarted -> Complete)
+  Assign 'Reject Return' to Lerato
+  Start 'Reject Return' (NotStarted -> Complete)
+  Complete 'Reject Return' (InProgress -> Complete)
+  Assign 'Notify Customer' to Lerato
+  Start 'Notify Customer' (NotStarted -> Complete)
+  Complete 'Notify Customer' (InProgress -> Complete)
+  Complete 'Decline Return' (InProgress -> Complete)
+  Complete 'Resolution' (InProgress -> Complete)
+  Start 'Refund Approval' (NotStarted -> Complete)
+  Assign 'Approve Refund' to Lerato
+  Start 'Approve Refund' (NotStarted -> Complete)
+  Complete 'Approve Refund' (InProgress -> Complete)
+  Complete 'Refund Approval' (InProgress -> Complete)
+  Start 'Settlement' (NotStarted -> Complete)
+  Assign 'Issue Refund' to Lerato
+  Start 'Issue Refund' (NotStarted -> Complete)
+  Complete 'Issue Refund' (InProgress -> Complete)
+  Assign 'Update Customer Record' to Lerato
+  Start 'Update Customer Record' (NotStarted -> Complete)
+  Complete 'Update Customer Record' (InProgress -> Complete)
+  Assign 'Send Confirmation' to Lerato
+  Start 'Send Confirmation' (NotStarted -> Complete)
+  Complete 'Send Confirmation' (InProgress -> Complete)
+  Complete 'Settlement' (InProgress -> Complete)
+  Assign 'Close Return' to Lerato
+  Start 'Close Return' (NotStarted -> Complete)
+  Complete 'Close Return' (InProgress -> Complete)
+  Complete 'Retail_Return_Root' (InProgress -> Complete)
 
-PARTICIPANTS
-  Credit Underwriting
-    Naledi  (holds 0 task(s))
-
-----------------------------------------
 ACTIVITY LOG
-  [Engine] TIVIDY WorkflowEngine initialized.
-  [Builder] Registered blueprint 'Retail_Return_Item'.
-  [Builder] Registered blueprint 'Bank_Process_Loan'.
-  [Facade] Spawned instance #1 from 'Bank_Process_Loan' using the LeastLoaded strategy.
+  [Facade] Engine started.
+  [Builder] Created blueprint 'Retail_Return'.
+  [Builder] Created blueprint 'Bank_Process_Loan'.
+  [Facade] Spawned instance #1 from 'Retail_Return'.
+  [Facade] Started instance #1.
+  [Facade] Completed 'Capture Return Request'.
+  [Facade] Completed 'Verify Proof of Purchase'.
+  [Facade] Completed 'Check Return Window and Policy'.
+  [Facade] Completed 'Inspect Item'.
+  [Facade] Completed 'Record Condition'.
+  [Facade] Completed 'Restock Shelf'.
+  [Facade] Completed 'Update Inventory'.
+  [Facade] Completed 'Log Damage Report'.
+  [Facade] Completed 'Lodge Supplier Claim'.
+  [Facade] Completed 'Reject Return'.
+  [Facade] Completed 'Notify Customer'.
+  [Facade] Completed 'Approve Refund'.
+  [Facade] Completed 'Issue Refund'.
+  [Facade] Completed 'Update Customer Record'.
+  [Facade] Completed 'Send Confirmation'.
+  [Facade] Completed 'Close Return'.
+  [Error] Could not complete 'Close Return'.
