@@ -1,6 +1,6 @@
 #include "ConcreteStages.h"
 #include "WorkflowComponent.h"
-#include <iostream>
+#include "Log.h"
 
 //================NotStarted=========================
 Stage* NotStarted::instance(){
@@ -10,16 +10,16 @@ Stage* NotStarted::instance(){
 
 //no longer starts itself: starting must go through StartCommand so it is recorded in the history
 void NotStarted::handleExecute(WorkflowComponent* c){
-    std::cout << "[Stage: NotStarted] Not started yet. Start it first.\n";
+    TLOG("[Stage: NotStarted] Not started yet. Start it first.");
 }
 
 void NotStarted::start(WorkflowComponent* c){
-    std::cout << "[Stage Transition] NotStarted -> InProgress\n";
+    TLOG("[Stage Transition] NotStarted -> InProgress");
     c->setState(InProgress::instance());
 }
 
 void NotStarted::cancel(WorkflowComponent* c){
-    std::cout << "[Stage Transition] NotStarted -> Cancelled\n";
+    TLOG("[Stage Transition] NotStarted -> Cancelled");
     c->setState(Cancelled::instance());
 }
 
@@ -30,21 +30,21 @@ Stage* InProgress::instance(){
 }
 
 void InProgress::handleExecute(WorkflowComponent* c){
-    std::cout << "[Stage: InProgress] Performing component work...\n";
+    TLOG("[Stage: InProgress] Performing component work...");
 }
 
 void InProgress::complete(WorkflowComponent* c){
-    std::cout << "[Stage Transition] InProgress -> Complete\n";
+    TLOG("[Stage Transition] InProgress -> Complete");
     c->setState(Complete::instance());
 }
 
 void InProgress::reject(WorkflowComponent* c){
-    std::cout << "[Stage Transition] InProgress -> Rejected\n";
+    TLOG("[Stage Transition] InProgress -> Rejected");
     c->setState(Rejected::instance());
 }
 
 void InProgress::cancel(WorkflowComponent* c){
-    std::cout << "[Stage Transition] InProgress -> Cancelled\n";
+    TLOG("[Stage Transition] InProgress -> Cancelled");
     c->setState(Cancelled::instance());
 }
 
@@ -55,7 +55,7 @@ Stage* Complete::instance(){
 }
 
 void Complete::handleExecute(WorkflowComponent* c){
-    std::cout << "[Stage: Complete] Component is already Complete. Execution blocked\n";
+    TLOG("[Stage: Complete] Component is already Complete. Execution blocked");
 }
 
 //=================Rejected====================
@@ -65,7 +65,7 @@ Stage* Rejected::instance(){
 }
 
 void Rejected::handleExecute(WorkflowComponent* c){
-    std::cout << "[Stage: Rejected] Component was Rejected. Execution blocked.\n";
+    TLOG("[Stage: Rejected] Component was Rejected. Execution blocked.");
 }
 
 //=================Cancelled====================
@@ -75,5 +75,5 @@ Stage* Cancelled::instance(){
 }
 
 void Cancelled::handleExecute(WorkflowComponent* c){
-    std::cout << "[Stage: Cancelled] Component was Cancelled. Execution blocked.\n";
+    TLOG("[Stage: Cancelled] Component was Cancelled. Execution blocked.");
 }

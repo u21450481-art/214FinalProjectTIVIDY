@@ -1,20 +1,20 @@
 #include "Stage.h"
-#include <iostream>
+#include "Log.h"
 
 void Stage::start(WorkflowComponent* c){
-    std::cout << "[State Warning] Cannot start from state: " << getName() << "\n";
+    TLOG("[State Warning] Cannot start from state: " << getName());
 }
 
 void Stage::complete(WorkflowComponent* c){
-    std::cout << "[State Warning] Cannot complete from state: " << getName() << "\n";
+    TLOG("[State Warning] Cannot complete from state: " << getName());
 }
 
 void Stage::reject(WorkflowComponent* c){
-    std::cout << "[State Warning] Cannot reject from state: " << getName() << "\n";
+    TLOG("[State Warning] Cannot reject from state: " << getName());
 }
 
 void Stage::cancel(WorkflowComponent* c){
-    std::cout << "[State Warning] Cannot cancel from state: " << getName() << "\n";
+    TLOG("[State Warning] Cannot cancel from state: " << getName());
 }
 
 bool Stage::isFinished() const{

@@ -3,8 +3,7 @@
 #include "ConcreteStages.h"
 #include "AssignmentStrategy.h"
 #include "AssignTaskCommand.h"
-
-#include <iostream>
+#include "Log.h"
 
 #include <string>
 
@@ -56,10 +55,10 @@ Command *Task::makeAssignCommand(AssignmentStrategy &s, const std::vector<Partic
     Participant *chosen = s.assign(*this, pool);
     if (!chosen)
     {
-        std::cout << "[Assignment] The " << s.getName() << " strategy found nobody for '" << taskName << "'.\n";
+        TLOG("[Assignment] The " << s.getName() << " strategy found nobody for '" << taskName << "'.");
         return nullptr;
     }
-    std::cout << "[Assignment] " << s.getName() << " strategy chose for '" << taskName << "'.\n";
+    TLOG("[Assignment] " << s.getName() << " strategy chose for '" << taskName << "'.");
     return new AssignTaskCommand(this, chosen);
 }
 

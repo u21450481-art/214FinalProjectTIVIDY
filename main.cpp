@@ -18,14 +18,29 @@ using namespace ftxui;
 
 static void loadDemos(WorkflowEngine &e)
 {
-    e.assembleBlueprint("Retail_Return_Item", 1,
-                        {"Customer Service", "Warehouse"},
-                        {{"Lerato", "Customer Service"}, {"Sipho", "Warehouse"}, {"Thabo", ""}},
-                        {{"Inspection", "ROOT"}, {"Settlement", "ROOT"}},
-                        {{"Scan Receipt", "ROOT", 1, ""},
+    e.assembleBlueprint("Retail_Return", 1,
+                        {"Customer Service", "Warehouse", "Inventory Control",
+                         "Supplier Relations", "Management", "Finance"},
+                        {{"Lerato", "Customer Service"},
+                         {"Sipho", "Warehouse"},
+                         {"Zanele", "Inventory Control"},
+                         {"Johann", "Supplier Relations"},
+                         {"Thabo", "Management"},
+                         {"Naledi", "Finance"}},
+                        {{"Intake", "ROOT"},
+                         {"Inspection", "ROOT"},
+                         {"Resolution", "ROOT"},
+                         {"Settlement", "ROOT"}},
+                        {{"Verify Receipt & Policy", "Intake", 1, ""},
                          {"Inspect Garment", "Inspection", 1, ""},
-                         {"Restock Shelf", "Inspection", 2, "itemCondition=Intact"},
-                         {"Approve Refund", "Settlement", 1, ""}});
+
+                         // The three conditional branches flattened for a faster demo
+                         {"Restock Inventory", "Resolution", 1, "itemCondition=Intact"},
+                         {"Log Damaged Goods", "Resolution", 1, "itemCondition=Damaged"},
+                         {"Decline & Notify", "Resolution", 1, "itemCondition=Unacceptable"},
+
+                         {"Approve & Issue Refund", "Settlement", 1, ""},
+                         {"Close Ticket", "ROOT", 1, ""}});
 
     e.assembleBlueprint("Bank_Process_Loan", 1,
                         {"Credit Underwriting"},
@@ -40,7 +55,6 @@ static void loadDemos(WorkflowEngine &e)
 // Colour helpers
 // ============================================================================
 
-// Task state -> colour (used in the task list and the report).
 static Color stateColor(const std::string &s)
 {
     if (s == "Complete")
@@ -54,7 +68,6 @@ static Color stateColor(const std::string &s)
     return Color::GrayLight; // NotStarted
 }
 
-// Instance status -> colour.
 static Color statusColor(const std::string &s)
 {
     if (s == "Finished")
@@ -66,7 +79,6 @@ static Color statusColor(const std::string &s)
     return Color::GrayLight; // Not started
 }
 
-// Activity log line -> colour, by its prefix.
 static Color logColor(const std::string &line)
 {
     if (line.rfind("[Error]", 0) == 0)
@@ -78,7 +90,6 @@ static Color logColor(const std::string &line)
     return Color::GrayLight;
 }
 
-// Build page summary line -> colour, by item kind.
 static Color summaryColor(const std::string &line)
 {
     if (line.rfind("Department", 0) == 0)
@@ -90,7 +101,6 @@ static Color summaryColor(const std::string &line)
     return Color::Green; // Task
 }
 
-// One line of the report: headings in bold cyan, task lines by state colour.
 static Element reportLine(const std::string &line)
 {
     if (line.empty())
@@ -119,7 +129,6 @@ static Element reportLine(const std::string &line)
     return text(line);
 }
 
-// A titled panel with a coloured rounded border.
 static Element panel(const std::string &title, Element content, Color c)
 {
     return vbox({
@@ -130,7 +139,6 @@ static Element panel(const std::string &title, Element content, Color c)
            borderStyled(ROUNDED, c);
 }
 
-// Entry renderer for menus: selected row gets an arrow and bold, focused row is inverted.
 static std::function<Element(const EntryState &)> plainEntry(Color c)
 {
     return [c](const EntryState &s)
@@ -161,7 +169,7 @@ int main()
 
     std::vector<std::string> bpNames, instLabels, taskLines;
     std::vector<int> instIds;
-    std::vector<TaskRow> currentRows; // rows of the selected instance, refreshed on every draw
+    std::vector<TaskRow> currentRows;
     int bpSel = 0, instSel = 0, taskSel = 0;
 
     std::vector<std::string> strategyNames = engine.getStrategyNames();
@@ -179,27 +187,23 @@ int main()
         instLabels.clear();
         for (int id : instIds)
             instLabels.push_back(engine.getInstanceLabel(id));
-        // Empty menus report -1, so clamp both ends.
         bpSel = std::max(0, std::min(bpSel, (int)bpNames.size() - 1));
         instSel = std::max(0, std::min(instSel, (int)instIds.size() - 1));
     };
     refresh();
 
-    // Selected instance ID, or -1 if there is none.
     auto selectedId = [&]() -> int
     { return (instSel >= 0 && instSel < (int)instIds.size()) ? instIds[instSel] : -1; };
 
     auto note = [&](const std::string &msg, bool ok)
     { status = msg; statusOk = ok; };
 
-    // Shows the result of a facade call (green on success, red with the reason on failure).
     auto done = [&](bool ok, const std::string &okMessage)
     {
         note(ok ? okMessage : engine.getLastError(), ok);
         refresh();
     };
 
-    // Returns the selected instance ID, or -1 after showing a hint.
     auto needInstance = [&]() -> int
     {
         int id = selectedId();
@@ -228,7 +232,6 @@ int main()
     bpOpt.entries_option.transform = plainEntry(Color::BlueLight);
     auto bpMenu = Menu(&bpNames, &bpSel, bpOpt);
 
-    // Instances are coloured by their status.
     auto instOpt = MenuOption::Vertical();
     instOpt.entries_option.transform = [&](const EntryState &s)
     {
@@ -244,7 +247,6 @@ int main()
     };
     auto instMenu = Menu(&instLabels, &instSel, instOpt);
 
-    // Tasks are coloured by state; groups (subprocesses) are bold.
     auto taskOpt = MenuOption::Vertical();
     taskOpt.entries_option.transform = [&](const EntryState &s)
     {
@@ -279,7 +281,13 @@ int main()
                                  done(engine.startInstance(id), "Instance started."); });
     auto completeBtn = makeButton("Complete", Color::Cyan, [&]
                                   { int id = needInstance(); if (id < 0) return;
-                                    done(engine.completeTask(id, taskSel), "Task completed."); });
+                                bool ok = engine.completeTask(id, taskSel);
+                                done(ok, "Task completed.");
+                                if (ok) {
+                                    std::vector<TaskRow> rows = engine.getTaskRows(id);
+                                    for (int i = 0; i < (int)rows.size(); i++)
+                                        if (!rows[i].isGroup && rows[i].state == "InProgress") { taskSel = i; break; }
+                                } });
     auto rejectBtn = makeButton("Reject", Color::Red, [&]
                                 { int id = needInstance(); if (id < 0) return;
                                   done(engine.rejectTask(id, taskSel), "Task rejected."); });
@@ -315,12 +323,12 @@ int main()
                                  { int id = needInstance(); if (id < 0) return;
                                    done(engine.setPayloadValue(id, key, val), "Payload updated."); });
 
+    // Controls rearranged to sit at the top of the interface
     auto runControls = Container::Vertical({
-        Container::Horizontal({bpMenu, instMenu, taskMenu}),
         Container::Horizontal({spawnBtn, startBtn, completeBtn, rejectBtn, cancelBtn, undoBtn, redoBtn}),
-        Container::Horizontal({strategyToggle, setStrategyBtn}),
-        Container::Horizontal({adapterToggle, setAdapterBtn, recordIn, importBtn}),
-        Container::Horizontal({keyIn, valIn, payloadBtn}),
+        Container::Horizontal({strategyToggle, setStrategyBtn, adapterToggle, setAdapterBtn}),
+        Container::Horizontal({recordIn, importBtn, keyIn, valIn, payloadBtn}),
+        Container::Horizontal({bpMenu, instMenu, taskMenu}),
     });
 
     auto runView = Renderer(runControls, [&]
@@ -329,7 +337,6 @@ int main()
         std::vector<std::string> history;
         std::map<std::string, std::string> payload;
 
-        // Refresh the task rows BEFORE rendering the task menu.
         currentRows = (id > 0) ? engine.getTaskRows(id) : std::vector<TaskRow>{};
         taskLines.clear();
         int totalTasks = 0, completeTasks = 0;
@@ -364,7 +371,9 @@ int main()
         Elements payloadLines, historyLines;
         for (const auto &kv : payload)
             payloadLines.push_back(hbox({text(kv.first) | color(Color::Yellow), text(" = "), text(kv.second)}));
-        size_t from = history.size() > 6 ? history.size() - 6 : 0;
+        
+        // Expanded history view to show more lines
+        size_t from = history.size() > 25 ? history.size() - 25 : 0;
         for (size_t i = from; i < history.size(); ++i) {
             Element h = text(history[i]);
             if (history[i].rfind("(undone)", 0) == 0) h = h | dim;
@@ -373,28 +382,40 @@ int main()
         }
 
         return vbox({
-            hbox({
-                panel("Blueprints", bpMenu->Render(), Color::BlueLight) | flex,
-                panel("Instances", instMenu->Render(), Color::Yellow) | flex,
-                panel("Tasks (select a row)", taskMenu->Render() | vscroll_indicator | frame, Color::Green) | flex,
-                vbox({
-                    panel("Payload", vbox(std::move(payloadLines)), Color::Magenta) | flex,
-                    panel("History", vbox(std::move(historyLines)), Color::GreenLight) | flex,
-                }) | flex,
-            }) | flex,
+            // Control Ribbon
+            vbox({
+                buttonRow({spawnBtn, startBtn, completeBtn, rejectBtn, cancelBtn, undoBtn, redoBtn}),
+                hbox({text(" Strategy: ") | dim, strategyToggle->Render() | color(Color::Cyan),
+                      text(" "), setStrategyBtn->Render(),
+                      text("   Adapter:  ") | dim, adapterToggle->Render() | color(Color::Cyan),
+                      text(" "), setAdapterBtn->Render()}),
+                hbox({text(" Record: ") | dim, recordIn->Render() | size(WIDTH, EQUAL, 10),
+                      text(" "), importBtn->Render(),
+                      text("   Key: ") | dim, keyIn->Render() | size(WIDTH, EQUAL, 14),
+                      text(" Value: ") | dim, valIn->Render() | size(WIDTH, EQUAL, 18),
+                      text(" "), payloadBtn->Render()})
+            }),
             infoLine,
             progressLine,
-            buttonRow({spawnBtn, startBtn, completeBtn, rejectBtn, cancelBtn, undoBtn, redoBtn}),
-            hbox({text(" Strategy: ") | dim, strategyToggle->Render() | color(Color::Cyan),
-                  text(" "), setStrategyBtn->Render()}),
-            hbox({text(" Adapter:  ") | dim, adapterToggle->Render() | color(Color::Cyan),
-                  text(" "), setAdapterBtn->Render(),
-                  text(" Record: ") | dim, recordIn->Render() | size(WIDTH, EQUAL, 10),
-                  text(" "), importBtn->Render()}),
-            text("   claims ids: C-102, C-103, C-104     hr ids: 1, 2, 3") | dim,
-            hbox({text(" Key: ") | dim, keyIn->Render() | size(WIDTH, EQUAL, 14),
-                  text(" Value: ") | dim, valIn->Render() | size(WIDTH, EQUAL, 18),
-                  text(" "), payloadBtn->Render()}),
+            separator(),
+            
+            // Main 3-Column Layout
+            hbox({
+                // Left Column: Blueprints & Instances
+                vbox({
+                    panel("Blueprints", bpMenu->Render() | vscroll_indicator | frame, Color::BlueLight) | size(HEIGHT, EQUAL, 10),
+                    panel("Instances", instMenu->Render() | vscroll_indicator | frame, Color::Yellow) | flex,
+                }) | size(WIDTH, EQUAL, 35),
+                
+                // Center Column: Tasks (Largest Panel)
+                panel("Tasks (select a row)", taskMenu->Render() | vscroll_indicator | frame, Color::Green) | flex,
+                
+                // Right Column: Payload & History
+                vbox({
+                    panel("Payload", vbox(std::move(payloadLines)) | vscroll_indicator | frame, Color::Magenta) | size(HEIGHT, EQUAL, 10),
+                    panel("History", vbox(std::move(historyLines)) | vscroll_indicator | frame, Color::GreenLight) | flex,
+                }) | size(WIDTH, EQUAL, 40),
+            }) | flex,
         }); });
 
     // ---------------- Build page ----------------
@@ -501,7 +522,7 @@ int main()
 
     auto instOpt2 = MenuOption::Vertical();
     instOpt2.entries_option.transform = instOpt.entries_option.transform;
-    auto instMenu2 = Menu(&instLabels, &instSel, instOpt2); // another view of the same selection
+    auto instMenu2 = Menu(&instLabels, &instSel, instOpt2);
 
     auto scrollUp = makeButton("Scroll up", Color::BlueLight, [&]
                                { reportScroll = std::max(0, reportScroll - 5); });

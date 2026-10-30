@@ -267,6 +267,11 @@ bool WorkflowEngine::completeTask(int instanceId, int taskIndex)
     WorkflowComponent *task = findNode(findInstance(instanceId), taskIndex);
     if (!med || !task)
         return fail("Task not found.");
+
+    // groups finish by themselves when everything inside them is done
+    if (!task->getChildren().empty())
+        return fail("'" + task->getName() + "' completes automatically once all its tasks are done.");
+
     if (!med->completeTask(task))
         return fail("Could not complete '" + task->getName() + "'.");
 

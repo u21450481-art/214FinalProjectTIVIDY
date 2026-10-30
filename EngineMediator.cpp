@@ -1,6 +1,5 @@
 #include "EngineMediator.h"
-
-#include <iostream>
+#include "Log.h"
 
 #include "Task.h"
 #include "DataPayload.h"
@@ -109,13 +108,13 @@ void EngineMediator::startWorkflow()
 {
     if (!root)
     {
-        std::cout << "[Mediator] No workflow to start.\n";
+        TLOG("[Mediator] No workflow to start.");
         return;
     }
     finished = false;
     halted = false;
     haltedAt = nullptr;
-    std::cout << "[Mediator] Starting workflow.\n";
+    TLOG("[Mediator] Starting workflow.");
     startComponent(root);
 }
 
@@ -123,7 +122,7 @@ void EngineMediator::notify(WorkflowComponent *sender, WorkflowEvent event)
 {
     if (!sender)
         return;
-    std::cout << "[Mediator] Event received: " << toString(event) << "\n";
+    TLOG("[Mediator] Event received: " << toString(event));
     Handler h = handlers[static_cast<int>(event)];
     if (h)
         (this->*h)(sender);
@@ -136,7 +135,7 @@ bool EngineMediator::runAndNotify(Command *cmd, WorkflowComponent *sender, Workf
 {
     if (!history.run(cmd))
     {
-        std::cout << "[Mediator] Action refused, nothing changed.\n";
+        TLOG("[Mediator] Action refused, nothing changed.");
         return false;
     }
     notify(sender, event);
@@ -180,14 +179,14 @@ bool EngineMediator::importData(const std::string &id, DataPayload *data)
 {
     if (!adapter || !data)
     {
-        std::cout << "[Mediator] No data adapter or no data to fill; nothing imported.\n";
+        TLOG("[Mediator] No data adapter or no data to fill; nothing imported.");
         return false;
     }
 
     DataPayload fetched; // the adapter fills this temporary copy first
     if (!adapter->adapt(id, fetched))
     {
-        std::cout << "[Mediator] Import failed: no record '" << id << "'.\n";
+        TLOG("[Mediator] Import failed: no record '" << id << "'.");
         return false;
     }
 
@@ -238,7 +237,7 @@ void EngineMediator::onFinished(WorkflowComponent *sender)
         if (sender == root)
         {
             finished = true;
-            std::cout << "[Mediator] Workflow finished.\n";
+            TLOG("[Mediator] Workflow finished.");
         }
         return; // not part of our tree: ignore
     }
@@ -267,13 +266,13 @@ void EngineMediator::onHalt(WorkflowComponent *sender)
 {
     halted = true;
     haltedAt = sender;
-    std::cout << "[Mediator] Workflow halted. No further work will be started.\n";
+    TLOG("[Mediator] Workflow halted. No further work will be started.");
 }
 
 void EngineMediator::onEscalated(WorkflowComponent * /*sender*/)
 {
     // Escalation is resolved by the approval chain; the mediator just waits.
-    std::cout << "[Mediator] Work escalated. Waiting for approval chain.\n";
+    TLOG("[Mediator] Work escalated. Waiting for approval chain.");
 }
 
 //=================Decisions====================
@@ -299,7 +298,7 @@ void EngineMediator::assign(WorkflowComponent *c)
         return;
     if (!strategy)
     {
-        std::cout << "[Mediator] No assignment strategy set; skipping assignment.\n";
+        TLOG("[Mediator] No assignment strategy set; skipping assignment.");
         return;
     }
     // the component decides: a Task returns an assign command, a group returns nullptr (no type check needed)

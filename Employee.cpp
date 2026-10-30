@@ -1,7 +1,7 @@
 #include "Employee.h"
+#include "Log.h"
 
 #include <algorithm>
-#include <iostream>
 
 Employee::Employee(std::string name, std::string role, int experience): name(name), role(role), experience(experience){}
 
@@ -38,14 +38,13 @@ void Employee::unassignTask(Task* t){
 
 void Employee::Operation(){
     if(tasks.empty()){
-        std::cout << "No tasks assigned yet" << std::endl;
+        TLOG("No tasks assigned yet");
         return;
     }
 
     for (auto* c : tasks) {
-        std::cout << "Performing task: " << c->getName() << std::endl;
+        TLOG("Performing task: " << c->getName());
     };
 }
-
 
 
