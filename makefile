@@ -120,3 +120,18 @@ clean:
 	rm -f *.o *.d $(TARGET) tividy
 
 .PHONY: all run valgrind tui clean
+
+# ---- checks added with the Mediator/Strategy integration fixes ----
+# engine sources only (everything except the FTXUI front end)
+ENGINE_SRCS = $(filter-out main.cpp,$(SRCS))
+
+# integration tests: mediator + strategies driving the real composites (run: make test)
+test: tests/test_integration.cpp $(ENGINE_SRCS)
+	$(CXX) -std=c++11 -Wall -Wextra -Wno-unused-parameter -g -fsanitize=address,undefined -I. -o test_integration $^
+	./test_integration
+
+# proves the engine is plain C++11 (the FTXUI front end needs a newer standard)
+check11:
+	@for f in $(ENGINE_SRCS); do $(CXX) -std=c++11 -Wall -Wextra -Wno-unused-parameter -fsyntax-only -I. $$f || exit 1; done; echo "engine compiles as C++11"
+
+.PHONY: test check11
