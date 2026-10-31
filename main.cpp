@@ -124,13 +124,16 @@ static Color summaryColor(const std::string &line)
         return Color::Yellow;
     return Color::Green; // Task
 }
-
 static Element reportLine(const std::string &line)
 {
     if (line.empty())
         return text("");
     if (line[0] != ' ')
         return text(line) | bold | color(Color::Cyan);
+
+    // checked before the state tags, because a skipped line also contains [NotStarted]
+    if (line.find("(skipped)") != std::string::npos)
+        return text(line) | color(Color::GrayDark);
 
     static const struct
     {
@@ -279,6 +282,8 @@ int main()
         if (s.index >= 0 && s.index < (int)currentRows.size())
         {
             c = stateColor(currentRows[s.index].state);
+            if (currentRows[s.index].skipped)
+                c = Color::GrayDark;
             group = currentRows[s.index].isGroup;
         }
         Element e = text(std::string(s.state ? "▶ " : "  ") + s.label) | color(c);
@@ -401,9 +406,17 @@ int main()
         for (const TaskRow &r : currentRows) {
             std::string line = std::string(r.depth * 2, ' ') + r.name + "  [" + r.state + "]";
             if (!r.assignee.empty())  line += "  -> " + r.assignee;
-            if (!r.condition.empty()) line += "  if " + r.condition;
+            if (!r.condition.empty())
+                line += "  if " + r.condition;
+            if (r.skipped)
+                line += "  (skipped)";
             taskLines.push_back(line);
-            if (!r.isGroup) { ++totalTasks; if (r.state == "Complete") ++completeTasks; }
+            if (!r.isGroup && !r.skipped)
+            {
+                ++totalTasks;
+                if (r.state == "Complete")
+                    ++completeTasks;
+            }
         }
         taskSel = std::max(0, std::min(taskSel, (int)taskLines.size() - 1));
 

@@ -2,7 +2,7 @@ INSTANCE #1: Retail_Return
   Status:    Finished
   Strategy:  LeastLoaded
   Adapter:   none
-  Progress:  16/16 tasks complete
+  Progress:  12/12 tasks complete
 
 TASKS
   Retail_Return_Root  [Complete]
@@ -14,15 +14,15 @@ TASKS
       Inspect Item  [Complete]  -> Lerato
       Record Condition  [Complete]  -> Lerato
     Resolution  [Complete]
-      Restock  [Complete]
-        Restock Shelf  [Complete]  -> Lerato  if itemCondition=Intact
-        Update Inventory  [Complete]  -> Lerato  if itemCondition=Intact
+      Restock  [NotStarted]
+        Restock Shelf  [NotStarted]  if itemCondition=Intact  (skipped)
+        Update Inventory  [NotStarted]  if itemCondition=Intact  (skipped)
       Damage Handling  [Complete]
         Log Damage Report  [Complete]  -> Lerato  if itemCondition=Damaged
         Lodge Supplier Claim  [Complete]  -> Lerato  if itemCondition=Damaged
-      Decline Return  [Complete]
-        Reject Return  [Complete]  -> Lerato  if itemCondition=Unacceptable
-        Notify Customer  [Complete]  -> Lerato  if itemCondition=Unacceptable
+      Decline Return  [NotStarted]
+        Reject Return  [NotStarted]  if itemCondition=Unacceptable  (skipped)
+        Notify Customer  [NotStarted]  if itemCondition=Unacceptable  (skipped)
     Refund Approval  [Complete]
       Approve Refund  [Complete]  -> Lerato
     Settlement  [Complete]
@@ -32,13 +32,14 @@ TASKS
     Close Return  [Complete]  -> Lerato
 
 PAYLOAD
-  (empty)
+  itemCondition = Damaged
 
 COMMAND HISTORY
   Start 'Retail_Return_Root' (NotStarted -> Complete)
   Start 'Intake' (NotStarted -> Complete)
   Assign 'Capture Return Request' to Lerato
   Start 'Capture Return Request' (NotStarted -> Complete)
+  Set data 'itemCondition' = 'Damaged'
   Complete 'Capture Return Request' (InProgress -> Complete)
   Assign 'Verify Proof of Purchase' to Lerato
   Start 'Verify Proof of Purchase' (NotStarted -> Complete)
@@ -56,14 +57,6 @@ COMMAND HISTORY
   Complete 'Record Condition' (InProgress -> Complete)
   Complete 'Inspection' (InProgress -> Complete)
   Start 'Resolution' (NotStarted -> Complete)
-  Start 'Restock' (NotStarted -> Complete)
-  Assign 'Restock Shelf' to Lerato
-  Start 'Restock Shelf' (NotStarted -> Complete)
-  Complete 'Restock Shelf' (InProgress -> Complete)
-  Assign 'Update Inventory' to Lerato
-  Start 'Update Inventory' (NotStarted -> Complete)
-  Complete 'Update Inventory' (InProgress -> Complete)
-  Complete 'Restock' (InProgress -> Complete)
   Start 'Damage Handling' (NotStarted -> Complete)
   Assign 'Log Damage Report' to Lerato
   Start 'Log Damage Report' (NotStarted -> Complete)
@@ -72,14 +65,6 @@ COMMAND HISTORY
   Start 'Lodge Supplier Claim' (NotStarted -> Complete)
   Complete 'Lodge Supplier Claim' (InProgress -> Complete)
   Complete 'Damage Handling' (InProgress -> Complete)
-  Start 'Decline Return' (NotStarted -> Complete)
-  Assign 'Reject Return' to Lerato
-  Start 'Reject Return' (NotStarted -> Complete)
-  Complete 'Reject Return' (InProgress -> Complete)
-  Assign 'Notify Customer' to Lerato
-  Start 'Notify Customer' (NotStarted -> Complete)
-  Complete 'Notify Customer' (InProgress -> Complete)
-  Complete 'Decline Return' (InProgress -> Complete)
   Complete 'Resolution' (InProgress -> Complete)
   Start 'Refund Approval' (NotStarted -> Complete)
   Assign 'Approve Refund' to Lerato
@@ -113,15 +98,10 @@ ACTIVITY LOG
   [Facade] Completed 'Check Return Window and Policy'.
   [Facade] Completed 'Inspect Item'.
   [Facade] Completed 'Record Condition'.
-  [Facade] Completed 'Restock Shelf'.
-  [Facade] Completed 'Update Inventory'.
   [Facade] Completed 'Log Damage Report'.
   [Facade] Completed 'Lodge Supplier Claim'.
-  [Facade] Completed 'Reject Return'.
-  [Facade] Completed 'Notify Customer'.
   [Facade] Completed 'Approve Refund'.
   [Facade] Completed 'Issue Refund'.
   [Facade] Completed 'Update Customer Record'.
   [Facade] Completed 'Send Confirmation'.
   [Facade] Completed 'Close Return'.
-  [Error] Could not complete 'Close Return'.

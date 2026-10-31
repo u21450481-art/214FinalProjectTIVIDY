@@ -29,7 +29,8 @@
  * @class DataPayload
  * @brief Stores domain-agnostic runtime key-value data for an active WorkflowInstance.
  */
-class DataPayload {
+class DataPayload
+{
 private:
     /** @brief Internal key-value map storing runtime workflow data. */
     std::map<std::string, std::string> values;
@@ -44,7 +45,7 @@ public:
      * @brief Copy constructor for cloning payloads across instances if needed.
      * @param other The DataPayload to copy from.
      */
-    DataPayload(const DataPayload& other);
+    DataPayload(const DataPayload &other);
 
     /**
      * @brief Destructor.
@@ -56,28 +57,28 @@ public:
      * @param key The identifier key (e.g., "employeeRole", "approvalStatus").
      * @param value The string value associated with the key.
      */
-    void set(const std::string& key, const std::string& value);
+    void set(const std::string &key, const std::string &value);
 
     /**
      * @brief Retrieves the value associated with a given key.
      * @param key The key to look up.
      * @return The value string if found, or an empty string "" if the key does not exist.
      */
-    std::string get(const std::string& key) const;
+    std::string get(const std::string &key) const;
 
     /**
      * @brief Checks whether a specific key exists in the payload.
      * @param key The key to check.
      * @return true if the key exists in the map, false otherwise.
      */
-    bool has(const std::string& key) const;
-
+    bool has(const std::string &key) const;
+    bool matches(const std::string &condition) const;
     /**
      * @brief Removes a key-value pair from the payload if present.
      * @param key The key to remove.
      * @return true if an element was erased, false if the key was not found.
      */
-    bool remove(const std::string& key);
+    bool remove(const std::string &key);
 
     /**
      * @brief Clears all entries from the payload.
@@ -88,7 +89,7 @@ public:
      * @brief Returns a read-only reference to the underlying map for inspection/TUI display.
      * @return Const reference to the internal std::map.
      */
-    const std::map<std::string, std::string>& getAll() const;
+    const std::map<std::string, std::string> &getAll() const;
 
     /**
      * @brief Utility method to print the current payload contents to standard output (for TUI).

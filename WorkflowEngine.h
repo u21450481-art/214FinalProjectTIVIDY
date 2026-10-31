@@ -41,6 +41,8 @@ struct TaskRow
     std::string outcome;
     std::string condition;
     bool isGroup; // true for a subprocess
+
+    bool skipped; // true if the task's branch condition does not hold, so it is not part of this run
 };
 
 class WorkflowEngine
