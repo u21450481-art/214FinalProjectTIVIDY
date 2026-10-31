@@ -9,6 +9,7 @@
  * with the lowest workload, then to the first in the list.
  */
 class RoleBasedStrategy : public AssignmentStrategy {
+    std::size_t nextCandidate = 0;
 public:
     Participant* assign(const Task& task,
                         const std::vector<Participant*>& candidates) override;
@@ -16,10 +17,11 @@ public:
 };
 
 /**
- * Chooses the candidate with the fewest active tasks. Ties go to the
- * first in the list, so results are predictable.
+ * Chooses the candidate with the fewest active tasks. Ties rotate through
+ * the candidate list to spread sequential work fairly.
  */
 class LeastLoadedStrategy : public AssignmentStrategy {
+    std::size_t nextCandidate = 0;
 public:
     Participant* assign(const Task& task,
                         const std::vector<Participant*>& candidates) override;
@@ -31,6 +33,7 @@ public:
  * with the lowest workload, then to the first in the list.
  */
 class MostExperienceStrategy : public AssignmentStrategy {
+    std::size_t nextCandidate = 0;
 public:
     Participant* assign(const Task& task,
                         const std::vector<Participant*>& candidates) override;

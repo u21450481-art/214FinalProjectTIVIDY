@@ -35,7 +35,7 @@ std::unique_ptr<WorkflowInstance> WorkflowDefinition::instantiate(int instanceId
     WorkflowComponent *clonedRoot = (root != nullptr) ? root->clone() : nullptr;
 
     TLOG("[WorkflowDefinition] Instantiating #" << instanceId
-                                                << " from blueprint '" << name << "' (v" << version << ")");
+                                                << " from WorkflowDefinition '" << name << "' (v" << version << ")");
 
     return std::unique_ptr<WorkflowInstance>(
         new WorkflowInstance(instanceId, name, version, clonedRoot, nullptr));

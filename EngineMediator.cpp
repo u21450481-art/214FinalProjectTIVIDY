@@ -14,7 +14,8 @@
 #include "StandardKeys.h"
 
 EngineMediator::EngineMediator()
-    : root(nullptr), strategy(nullptr), adapter(nullptr), finished(false), halted(false), haltedAt(nullptr)
+    : root(nullptr), strategy(nullptr), adapter(nullptr), branchData(nullptr),
+      finished(false), halted(false), haltedAt(nullptr)
 {
     for (int i = 0; i < 6; i++)
         handlers[i] = nullptr;
@@ -356,7 +357,7 @@ bool EngineMediator::isDone(WorkflowComponent *c) const
 {
     std::vector<WorkflowComponent *> kids = c->getChildren();
     if (kids.empty())
-        return stateIs(c, "Complete");
+        return !applies(c) || stateIs(c, "Complete"); // a task that does not apply counts as done
     for (auto *k : kids)
         if (!isDone(k))
             return false;
@@ -403,4 +404,15 @@ void EngineMediator::refreshStatus()
     haltedAt = findHalted(root);
     halted = (haltedAt != nullptr);
     finished = (root != nullptr && stateIs(root, "Complete"));
+}
+
+// branchconditions
+
+// a task whose branch condition does not hold is not part of this run
+bool EngineMediator::applies(WorkflowComponent *c) const
+{
+    Task *t = dynamic_cast<Task *>(c);
+    if (!t || !branchData)
+        return true;
+    return branchData->matches(t->getBranchCondition());
 }

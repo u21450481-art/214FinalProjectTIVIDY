@@ -25,7 +25,8 @@ public:
     // The construction steps (replace the old data-less buildParticipants/buildTaskTree).
     virtual void reset(const std::string &name, int version) = 0;
     virtual void addDepartment(const std::string &deptName) = 0;
-    virtual void addEmployee(const std::string &empName, const std::string &deptName) = 0;
+    virtual void addEmployee(const std::string &empName, const std::string &deptName,
+                             const std::string &role, int experience) = 0;
     virtual void addSubprocess(const std::string &subName, const std::string &parentName) = 0;
     virtual void addTask(const std::string &taskName, const std::string &parentName,
                          int priority, const std::string &branchCondition,

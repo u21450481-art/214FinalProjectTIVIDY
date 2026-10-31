@@ -4,7 +4,7 @@
  *
  * One call here hides a sequence across several subsystems:
  *   assembleBlueprint -> Director, Builder
- *   spawnInstance     -> Prototype, Mediator, Strategy
+ *   instantiateInstance     -> Prototype, Mediator, Strategy
  *   startInstance     -> Mediator, Command, State
  *   complete/reject/cancelTask -> Mediator, Command, State
  *   setStrategy       -> Strategy
@@ -41,13 +41,14 @@ struct TaskRow
     std::string outcome;
     std::string condition;
     bool isGroup; // true for a subprocess
+    bool skipped; // true if the task's branch condition does not hold
 };
 
 class WorkflowEngine
 {
 private:
     // members are destroyed in reverse order, so mediators go before instances,
-    // and instances before the blueprints their participants belong to
+    // and instances before the WorkflowDefinitions their participants belong to
     CustomDefinitionBuilder builder;
     Director director;
     std::map<std::string, std::unique_ptr<WorkflowDefinition>> blueprints;
@@ -75,7 +76,7 @@ public:
     WorkflowEngine(const WorkflowEngine &) = delete;
     WorkflowEngine &operator=(const WorkflowEngine &) = delete;
 
-    // builds a blueprint with the director and stores it. false if anything is wrong, see getLastError()
+    // builds a WorkflowDefinition with the director and stores it. false if anything is wrong, see getLastError()
     bool assembleBlueprint(const std::string &name,
                            int version,
                            const std::vector<std::string> &departments,
@@ -84,9 +85,9 @@ public:
                            const std::vector<TaskSpec> &tasks);
     std::vector<std::string> getBlueprintNames() const;
 
-    // clones a blueprint into a new instance with its own mediator. returns the id, or -1
-    int spawnInstance(const std::string &blueprintName,
-                      const std::string &strategyName = "LeastLoaded");
+    // clones a WorkflowDefinition into a new instance with its own mediator. returns the id, or -1
+    int instantiateInstance(const std::string &blueprintName,
+                            const std::string &strategyName = "LeastLoaded");
     std::vector<int> getActiveInstanceIds() const;
     std::string getInstanceLabel(int instanceId) const;
     std::string getInstanceStatus(int instanceId) const; // Not started, Running, Halted, Finished

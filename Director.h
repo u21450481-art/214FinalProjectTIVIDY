@@ -9,6 +9,8 @@ struct EmployeeSpec
 {
     std::string name;
     std::string department;
+    std::string role;
+    int experience;
 };
 struct SubprocessSpec
 {

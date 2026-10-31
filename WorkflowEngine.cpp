@@ -17,7 +17,7 @@
 #include "Task.h"
 #include "WorkflowComponent.h"
 #include "WorkflowIterator.h"
-
+#include "ReturnsDataAdapter.h"
 //---------- helpers ----------
 
 AssignmentStrategy *WorkflowEngine::makeStrategy(const std::string &name)
@@ -33,10 +33,12 @@ AssignmentStrategy *WorkflowEngine::makeStrategy(const std::string &name)
 
 DataAdapter *WorkflowEngine::makeAdapter(const std::string &name)
 {
-    if (name == "claims")
+    if (name == "CLAIMS")
         return new ClaimsDataAdapter();
-    if (name == "hr")
+    if (name == "HR")
         return new HrDataAdapter();
+    if (name == "RETURNS")
+        return new ReturnsDataAdapter();
     return nullptr;
 }
 
@@ -56,7 +58,7 @@ void WorkflowEngine::collectRows(WorkflowComponent *node, int depth, std::vector
     row.name = node->getName();
     row.state = node->getState()->getName();
     row.isGroup = true;
-
+    row.skipped = false;
     // only single tasks have an assignee, outcome and condition
     if (Task *t = dynamic_cast<Task *>(node))
     {
@@ -179,9 +181,10 @@ std::vector<std::string> WorkflowEngine::getBlueprintNames() const
 
 //---------- instances ----------
 
-int WorkflowEngine::spawnInstance(const std::string &blueprintName, const std::string &strategyName)
+int WorkflowEngine::instantiateInstance(const std::string &blueprintName, const std::string &strategyName)
 {
-    auto bp = blueprints.find(blueprintName);
+    // just use auto to avoid errors
+    auto bp = blueprints.find(blueprintName); // does this workflowdefinition exist
     if (bp == blueprints.end())
     {
         fail("Blueprint '" + blueprintName + "' not found.");
@@ -199,11 +202,15 @@ int WorkflowEngine::spawnInstance(const std::string &blueprintName, const std::s
     int id = nextGlobalInstanceId++;
 
     // prototype: the instance gets its own copy of the task tree
-    std::unique_ptr<WorkflowInstance> inst = def->instantiate(id);
+    std::unique_ptr<WorkflowInstance> inst = def->instantiate(id); //"clone"
 
-    // the mediator owns the strategy and works out who can be assigned tasks
+    // every instance has its own mediator
+    //  the mediator owns the strategy and works out who can be assigned tasks
     std::unique_ptr<EngineMediator> med(new EngineMediator());
+
     med->setRoot(inst->getRoot());
+    med->setPayload(&inst->getPayload()); // so the mediator can check branch conditions
+
     med->setCandidates(def->getParticipants());
     med->setStrategy(strategy.release());
     inst->setMediator(med.get());
@@ -211,7 +218,7 @@ int WorkflowEngine::spawnInstance(const std::string &blueprintName, const std::s
     instances[id] = std::move(inst);
     mediators[id] = std::move(med);
 
-    logEvent("[Facade] Spawned instance #" + std::to_string(id) + " from '" + blueprintName + "'.");
+    logEvent("[Facade] Instantiated instance #" + std::to_string(id) + " from '" + blueprintName + "'.");
     return id;
 }
 
@@ -235,7 +242,7 @@ std::string WorkflowEngine::getInstanceStatus(int instanceId) const
         return "Halted";
     return stateIs(inst->getRoot(), "NotStarted") ? "Not started" : "Running";
 }
-
+/** @brief make the name of the instance */
 std::string WorkflowEngine::getInstanceLabel(int instanceId) const
 {
     WorkflowInstance *inst = findInstance(instanceId);
@@ -256,6 +263,7 @@ bool WorkflowEngine::startInstance(int instanceId)
     if (!stateIs(inst->getRoot(), "NotStarted"))
         return fail("Instance #" + std::to_string(instanceId) + " was already started.");
 
+    // basically hit play
     med->startWorkflow();
     logEvent("[Facade] Started instance #" + std::to_string(instanceId) + ".");
     return true;
@@ -309,8 +317,35 @@ std::vector<TaskRow> WorkflowEngine::getTaskRows(int instanceId) const
 {
     std::vector<TaskRow> rows;
     WorkflowInstance *inst = findInstance(instanceId);
-    if (inst)
-        collectRows(inst->getRoot(), 0, rows);
+    if (!inst)
+        return rows;
+
+    collectRows(inst->getRoot(), 0, rows);
+
+    // a task that has not started and whose condition does not hold will never run
+    // Inside WorkflowEngine.cpp -> getTaskRows(int id)
+    for (TaskRow &r : rows)
+    {
+        if (!r.isGroup && r.state == "NotStarted" && !r.condition.empty())
+        {
+
+            // extract the key from the condition
+            size_t eqPos = r.condition.find('=');
+            if (eqPos != std::string::npos)
+            {
+                std::string key = r.condition.substr(0, eqPos);
+
+                // current payload map
+                std::map<std::string, std::string> payload = this->getPayloadMap(instanceId);
+
+                // skip only if the key actually exists in the payload and it doesn't match.
+                if (payload.count(key) > 0 && !inst->getPayload().matches(r.condition))
+                {
+                    r.skipped = true;
+                }
+            }
+        }
+    }
     return rows;
 }
 
@@ -347,7 +382,7 @@ std::string WorkflowEngine::getStrategyName(int instanceId) const
 
 std::vector<std::string> WorkflowEngine::getAdapterNames() const
 {
-    return {"claims", "hr"};
+    return {"CLAIMS", "RETURNS", "HR"};
 }
 
 bool WorkflowEngine::setAdapter(int instanceId, const std::string &adapterName)
@@ -455,7 +490,7 @@ std::vector<std::string> WorkflowEngine::generateReport(int instanceId) const
     int total = 0, complete = 0;
     for (const TaskRow &r : rows)
     {
-        if (r.isGroup)
+        if (r.isGroup || r.skipped) // skipped tasks are not part of the total
             continue;
         total++;
         if (r.state == "Complete")
@@ -481,6 +516,8 @@ std::vector<std::string> WorkflowEngine::generateReport(int instanceId) const
             line += "  outcome: " + r.outcome;
         if (!r.condition.empty())
             line += "  if " + r.condition;
+        if (r.skipped)
+            line += "  (skipped)";
         out.push_back(line);
     }
 

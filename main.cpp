@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <exception>
 #include <functional>
 #include <map>
 #include <string>
@@ -9,11 +10,52 @@
 #include <ftxui/dom/elements.hpp>
 
 #include "WorkflowEngine.h"
+#include "Employee.h"
+#include "ApprovalHandler.h"
+#include "ApprovalRequest.h"
 
 using namespace ftxui;
 
+// ===============================
+// Concrete Approval Handler 
+// ===============================
+class TuiApprovalHandler : public ApprovalHandler {
+private:
+    int maxLevel;
+    std::string approverName;
+    std::string approverRole;
+    std::string* logRef;
+
+public:
+    TuiApprovalHandler(int limit, const std::string& name, const std::string& role, Employee* emp, std::string* log) 
+        : maxLevel(limit), approverName(name), approverRole(role), logRef(log) {
+        setApprover(emp); // Links team's Employee (Participant)
+    }
+
+    void handleRequest(ApprovalRequest& request) override {
+        int requestLevel = 2; // Default mock request level
+
+        if (requestLevel <= maxLevel) { 
+            if (logRef) {
+                *logRef = "Request approved by " + approverName + " (" + approverRole + ") successfully!";
+            }
+        } 
+        else if (successor != nullptr) {
+            if (logRef) {
+                *logRef = approverName + " (" + approverRole + ") limit exceeded. Passing to successor...";
+            }
+            successor->handleRequest(request); 
+        } 
+        else {
+            if (logRef) {
+                *logRef = "Request exceeded maximum authority limits of the chain.";
+            }
+        }
+    }
+};
+
 // ============================================================================
-// Demo blueprints
+// Demo WorkflowDefinitions
 // ============================================================================
 
 static void loadDemos(WorkflowEngine &e)
@@ -21,19 +63,19 @@ static void loadDemos(WorkflowEngine &e)
     e.assembleBlueprint("Retail_Return", 1,
                         {"Customer Service", "Warehouse", "Inventory Control",
                          "Supplier Relations", "Management", "Finance"},
-                        {{"Lerato", "Customer Service"},
-                         {"Tshego", "Customer Service"},
-                         {"Sipho", "Warehouse"},
-                         {"Luthando", "Warehouse"},
-                         {"Zanele", "Inventory Control"},
-                         {"Tatenda", "Inventory Control"},
-                         {"Johann", "Supplier Relations"},
-                         {"Tanaka", "Supplier Relations"},
-                         {"Thabo", "Management"},
-                         {"Moeletsi", "Management"},
-                         {"Naledi", "Finance"},
-                         {"Bowdene", "Finance"},
-                         {"Karabo", "Finance"}},
+                        {{"Lerato", "Customer Service", "Returns Clerk", 8},
+                         {"Tshego", "Customer Service", "Customer Advisor", 3},
+                         {"Sipho", "Warehouse", "Quality Inspector", 11},
+                         {"Luthando", "Warehouse", "Warehouse Associate", 4},
+                         {"Zanele", "Inventory Control", "Inventory Analyst", 7},
+                         {"Tatenda", "Inventory Control", "Stock Controller", 2},
+                         {"Johann", "Supplier Relations", "Supplier Liaison", 12},
+                         {"Tanaka", "Supplier Relations", "Procurement Clerk", 5},
+                         {"Thabo", "Management", "Store Manager", 15},
+                         {"Moeletsi", "Management", "Shift Supervisor", 9},
+                         {"Naledi", "Finance", "Refund Analyst", 10},
+                         {"Bowdene", "Finance", "Accounts Clerk", 1},
+                         {"Karabo", "Finance", "Finance Officer", 6}},
                         {{"Intake", "ROOT"},
                          {"Inspection", "ROOT"},
                          {"Resolution", "ROOT"},
@@ -66,13 +108,38 @@ static void loadDemos(WorkflowEngine &e)
 
                          {"Close Return", "ROOT", 1, ""}});
 
-    e.assembleBlueprint("Bank_Process_Loan", 1,
-                        {"Credit Underwriting"},
-                        {{"Naledi", "Credit Underwriting"}},
-                        {{"Credit_Assessment", "ROOT"}},
-                        {{"Verify FICA", "ROOT", 1, ""},
-                         {"Credit Bureau Check", "Credit_Assessment", 1, ""},
-                         {"Sign-Off", "Credit_Assessment", 2, "creditStatus=Approved"}});
+    e.assembleBlueprint("Insurance_Claim", 1,
+                        {"Claims Intake", "Assessment", "Supplier Network", "Management", "Finance"},
+                        {{"Thabo", "Claims Intake", "Claims Administrator", 6},
+                         {"Lerato", "Claims Intake", "Intake Officer", 4},
+                         {"Sipho", "Assessment", "Claims Assessor", 12},
+                         {"Johann", "Supplier Network", "Repair Liaison", 8},
+                         {"Zanele", "Management", "Claims Manager", 15},
+                         {"Naledi", "Finance", "Payout Analyst", 9}},
+                        {{"Intake", "ROOT"},
+                         {"Assessment", "ROOT"},
+                         {"Resolution", "ROOT"},
+                         {"Repair Route", "Resolution"},
+                         {"WriteOff Route", "Resolution"},
+                         {"Payout Approval", "ROOT"},
+                         {"Settlement", "ROOT"}},
+                        {{"Record the customer's new claim details", "Intake", 1, ""},
+                         {"Check the policy to confirm coverage", "Intake", 1, ""},
+
+                         {"Inspect the damage and estimate costs", "Assessment", 1, ""},
+
+                         // Conditional Branches
+                         {"Assign a repair shop to fix the vehicle", "Repair Route", 1, "claimType=Repair"},
+                         {"Process the vehicle as a total write-off", "WriteOff Route", 1, "claimType=WriteOff"},
+
+                         // Chain of Responsibility Task
+                         {"Request approval for the final payout", "Payout Approval", 1, ""},
+
+                         // Parallel execution
+                         {"Pay the customer or the repair shop", "Settlement", 1, ""},
+                         {"Notify the customer that the claim is resolved", "Settlement", 1, ""},
+
+                         {"Close the claim file in the system", "ROOT", 1, ""}});
 }
 
 // ============================================================================
@@ -131,6 +198,9 @@ static Element reportLine(const std::string &line)
         return text("");
     if (line[0] != ' ')
         return text(line) | bold | color(Color::Cyan);
+
+    if (line.find("(skipped)") != std::string::npos)
+        return text(line) | color(Color::GrayDark);
 
     static const struct
     {
@@ -201,7 +271,7 @@ int main()
     int strategySel = 0, adapterSel = 0;
     std::string recordId, key, val;
 
-    std::string status = "Ready. Select a blueprint and press Spawn.";
+    std::string status = "Ready. Select a WorkflowDefinition and press instantiate.";
     bool statusOk = true;
 
     auto refresh = [&]
@@ -232,7 +302,7 @@ int main()
     {
         int id = selectedId();
         if (id < 0)
-            note("Select or spawn an instance first.", false);
+            note("Select or instantiate an instance first.", false);
         return id;
     };
 
@@ -279,6 +349,8 @@ int main()
         if (s.index >= 0 && s.index < (int)currentRows.size())
         {
             c = stateColor(currentRows[s.index].state);
+            if (currentRows[s.index].skipped)
+                c = Color::GrayDark;
             group = currentRows[s.index].isGroup;
         }
         Element e = text(std::string(s.state ? "▶ " : "  ") + s.label) | color(c);
@@ -291,12 +363,12 @@ int main()
     auto taskMenu = Menu(&taskLines, &taskSel, taskOpt);
 
     // ---------------- Run page: buttons ----------------
-    auto spawnBtn = makeButton("Spawn", Color::Green, [&]
-                               {
-        if (bpSel < 0 || bpSel >= (int)bpNames.size()) { note("Select a blueprint first.", false); return; }
+    auto instantiateBtn = makeButton("Instantiate", Color::Green, [&]
+                                     {
+        if (bpSel < 0 || bpSel >= (int)bpNames.size()) { note("Select a WorkflowDefinition first.", false); return; }
         if (strategySel < 0 || strategySel >= (int)strategyNames.size()) return;
-        int id = engine.spawnInstance(bpNames[bpSel], strategyNames[strategySel]);
-        done(id > 0, "Spawned instance #" + std::to_string(id) + ".");
+        int id = engine.instantiateInstance(bpNames[bpSel], strategyNames[strategySel]);
+        done(id > 0, "Instantiated instance #" + std::to_string(id) + ".");
         for (int i = 0; i < (int)instIds.size(); ++i)
             if (instIds[i] == id) instSel = i; });
 
@@ -310,15 +382,40 @@ int main()
                                          if (!rows[i].isGroup && rows[i].state == "InProgress") { taskSel = i; break; }
                                  } });
 
+    // Integrated CoR Trigger on Task Completion
     auto completeBtn = makeButton("Complete", Color::Cyan, [&]
-                                  { int id = needInstance(); if (id < 0) return;
-                                    bool ok = engine.completeTask(id, taskSel);
-                                    done(ok, "Task completed.");
-                                    if (ok) {
-                                        std::vector<TaskRow> rows = engine.getTaskRows(id);
-                                        for (int i = 0; i < (int)rows.size(); i++)
-                                            if (!rows[i].isGroup && rows[i].state == "InProgress") { taskSel = i; break; }
-                                    } });
+                                  {
+                                      int id = needInstance(); if (id < 0) return;
+                                      
+                                      currentRows = engine.getTaskRows(id);
+                                      if (taskSel >= 0 && taskSel < (int)currentRows.size()) {
+                                          std::string taskName = currentRows[taskSel].name;
+                                          if (taskName.find("approval") != std::string::npos || taskName.find("Approve") != std::string::npos) {
+                                              ApprovalRequest req(taskName, static_cast<AuthorityLevel>(2));
+                                              
+                                              Employee mgr("Charlie", "Manager", 5);
+                                              Employee dir("Diana", "Director", 10);
+                                              Employee ceo("Vimbai", "Chief Executive Officer", 20);
+
+                                              TuiApprovalHandler managerNode(1, "Charlie", "Manager", &mgr, nullptr);
+                                              TuiApprovalHandler directorNode(2, "Diana", "Director", &dir, nullptr);
+                                              TuiApprovalHandler ceoNode(3, "Vimbai", "Chief Executive Officer", &ceo, nullptr);
+
+                                              managerNode.setNext(&directorNode);
+                                              directorNode.setNext(&ceoNode);
+
+                                              managerNode.handleRequest(req);
+                                          }
+                                      }
+
+                                      bool ok = engine.completeTask(id, taskSel);
+                                      done(ok, "Task completed.");
+                                      if (ok) {
+                                          std::vector<TaskRow> rows = engine.getTaskRows(id);
+                                          for (int i = 0; i < (int)rows.size(); i++)
+                                              if (!rows[i].isGroup && rows[i].state == "InProgress") { taskSel = i; break; }
+                                      } 
+                                  });
 
     auto rejectBtn = makeButton("Reject", Color::Red, [&]
                                 { int id = needInstance(); if (id < 0) return;
@@ -359,6 +456,7 @@ int main()
                                     for (int i = 0; i < (int)rows.size(); i++)
                                         if (!rows[i].isGroup && rows[i].state == "InProgress") { taskSel = i; break; }
                                 } });
+
     auto strategyToggle = Toggle(&strategyNames, &strategySel);
     auto setStrategyBtn = makeButton("Apply to instance", Color::BlueLight, [&]
                                      { int id = needInstance(); if (id < 0) return;
@@ -381,9 +479,8 @@ int main()
                                  { int id = needInstance(); if (id < 0) return;
                                    done(engine.setPayloadValue(id, key, val), "Payload updated."); });
 
-    // Controls rearranged to sit at the top of the interface
     auto runControls = Container::Vertical({
-        Container::Horizontal({spawnBtn, startBtn, completeBtn, rejectBtn, cancelBtn, undoBtn, redoBtn}),
+        Container::Horizontal({instantiateBtn, startBtn, completeBtn, rejectBtn, cancelBtn, undoBtn, redoBtn}),
         Container::Horizontal({strategyToggle, setStrategyBtn, adapterToggle, setAdapterBtn}),
         Container::Horizontal({recordIn, importBtn, keyIn, valIn, payloadBtn}),
         Container::Horizontal({bpMenu, instMenu, taskMenu}),
@@ -401,13 +498,21 @@ int main()
         for (const TaskRow &r : currentRows) {
             std::string line = std::string(r.depth * 2, ' ') + r.name + "  [" + r.state + "]";
             if (!r.assignee.empty())  line += "  -> " + r.assignee;
-            if (!r.condition.empty()) line += "  if " + r.condition;
+            if (!r.condition.empty())
+                line += "  if " + r.condition;
+            if (r.skipped)
+                line += "  (skipped)";
             taskLines.push_back(line);
-            if (!r.isGroup) { ++totalTasks; if (r.state == "Complete") ++completeTasks; }
+            if (!r.isGroup && !r.skipped)
+            {
+                ++totalTasks;
+                if (r.state == "Complete")
+                    ++completeTasks;
+            }
         }
         taskSel = std::max(0, std::min(taskSel, (int)taskLines.size() - 1));
 
-        Element infoLine = text(" Spawn or select an instance.") | dim;
+        Element infoLine = text(" Instantiate or select an instance.") | dim;
         if (id > 0) {
             history = engine.getHistory(id);
             payload = engine.getPayloadMap(id);
@@ -430,8 +535,6 @@ int main()
         for (const auto &kv : payload)
             payloadLines.push_back(hbox({text(kv.first) | color(Color::Yellow), text(" = "), text(kv.second)}));
 
-        // Expanded history view to show more lines
-        // Lowering this to 14 acts as an auto-scroll, keeping the newest items visible
         size_t from = history.size() > 14 ? history.size() - 14 : 0;
         for (size_t i = from; i < history.size(); ++i)
         {
@@ -444,9 +547,8 @@ int main()
         }
 
         return vbox({
-            // Control Ribbon
             vbox({
-                buttonRow({spawnBtn, startBtn, completeBtn, rejectBtn, cancelBtn, undoBtn, redoBtn}),
+                buttonRow({instantiateBtn, startBtn, completeBtn, rejectBtn, cancelBtn, undoBtn, redoBtn}),
                 hbox({text(" Strategy: ") | dim, strategyToggle->Render() | color(Color::Cyan),
                       text(" "), setStrategyBtn->Render(),
                       text("   Adapter:  ") | dim, adapterToggle->Render() | color(Color::Cyan),
@@ -461,18 +563,14 @@ int main()
             progressLine,
             separator(),
             
-            // Main 3-Column Layout
             hbox({
-                // Left Column: Blueprints & Instances
                 vbox({
-                    panel("Blueprints", bpMenu->Render() | vscroll_indicator | frame, Color::BlueLight) | size(HEIGHT, EQUAL, 10),
+                    panel("WorkflowDefinitions", bpMenu->Render() | vscroll_indicator | frame, Color::BlueLight) | size(HEIGHT, EQUAL, 10),
                     panel("Instances", instMenu->Render() | vscroll_indicator | frame, Color::Yellow) | flex,
                 }) | size(WIDTH, EQUAL, 35),
                 
-                // Center Column: Tasks (Largest Panel)
                 panel("Tasks (select a row)", taskMenu->Render() | vscroll_indicator | frame, Color::Green) | flex,
                 
-                // Right Column: Payload & History
                 vbox({
                     panel("Payload", vbox(std::move(payloadLines)) | vscroll_indicator | frame, Color::Magenta) | size(HEIGHT, EQUAL, 10),
                     panel("History", vbox(std::move(historyLines)) | vscroll_indicator | frame, Color::GreenLight) | flex,
@@ -482,7 +580,7 @@ int main()
 
     // ---------------- Build page ----------------
     std::string bName, bVer = "1";
-    std::string f1, f2, f3 = "1", f4;
+    std::string f1, f2, f3 = "1", f4, f5, f6;
     int kind = 0;
     std::vector<std::string> kinds = {"Department", "Employee", "Subprocess", "Task"};
     std::vector<std::string> bDepts, bSummary;
@@ -490,13 +588,15 @@ int main()
     std::vector<SubprocessSpec> bSubs;
     std::vector<TaskSpec> bTasks;
 
-    auto bNameIn = Input(&bName, "blueprint name");
+    auto bNameIn = Input(&bName, "WorkflowDefinition name");
     auto bVerIn = Input(&bVer, "1");
     auto kindToggle = Toggle(&kinds, &kind);
     auto f1In = Input(&f1, "name");
     auto f2In = Input(&f2, "parent / department");
     auto f3In = Input(&f3, "priority");
     auto f4In = Input(&f4, "condition key=value");
+    auto f5In = Input(&f5, "employee role");
+    auto f6In = Input(&f6, "experience (years)");
 
     auto addBtn = makeButton("Add item", Color::Green, [&]
                              {
@@ -508,8 +608,21 @@ int main()
                 bSummary.push_back("Department: " + f1);
                 break;
             case 1:
-                bEmps.push_back({f1, f2});
-                bSummary.push_back("Employee: " + f1 + (f2.empty() ? " (standalone)" : " -> " + f2));
+                if (f5.empty() || f6.empty()) { note("Employees need a role and experience in years.", false); return; }
+                try {
+                    size_t parsed = 0;
+                    int experience = std::stoi(f6, &parsed);
+                    if (parsed != f6.size() || experience < 0) {
+                        note("Experience must be a non-negative whole number of years.", false);
+                        return;
+                    }
+                    bEmps.push_back({f1, f2, f5, experience});
+                    bSummary.push_back("Employee: " + f1 + " (" + f5 + ", " + std::to_string(experience) +
+                                       " years)" + (f2.empty() ? " (standalone)" : " -> " + f2));
+                } catch (const std::exception &) {
+                    note("Experience must be a non-negative whole number of years.", false);
+                    return;
+                }
                 break;
             case 2:
                 bSubs.push_back({f1, parent});
@@ -523,8 +636,9 @@ int main()
                 break;
             }
         }
-        note("Added. Press 'Create blueprint' when you are done.", true);
-        f1.clear(); });
+        note("Added. Press 'Create WorkflowDefinition' when you are done.", true);
+        f1.clear();
+        if (kind == 1) { f5.clear(); f6.clear(); } });
 
     auto clearBuild = [&]
     {
@@ -535,13 +649,13 @@ int main()
         bSummary.clear();
     };
 
-    auto createBtn = makeButton("Create blueprint", Color::Cyan, [&]
+    auto createBtn = makeButton("Create WorkflowDefinition", Color::Cyan, [&]
                                 {
         int ver = 1;
         try { ver = std::stoi(bVer); } catch (...) {}
         bool ok = engine.assembleBlueprint(bName, ver, bDepts, bEmps, bSubs, bTasks);
         if (ok) { clearBuild(); bName.clear(); }
-        done(ok, "Blueprint created. Select it on the Run page and Spawn."); });
+        done(ok, "WorkflowDefinition created. Select it on the Run page and Instantiate."); });
 
     auto clearBtn = makeButton("Clear list", Color::Red, [&]
                                { clearBuild(); note("Cleared.", true); });
@@ -549,7 +663,7 @@ int main()
     auto buildControls = Container::Vertical({
         Container::Horizontal({bNameIn, bVerIn}),
         kindToggle,
-        Container::Horizontal({f1In, f2In, f3In, f4In}),
+        Container::Horizontal({f1In, f2In, f3In, f4In, f5In, f6In}),
         Container::Horizontal({addBtn, createBtn, clearBtn}),
     });
 
@@ -562,15 +676,17 @@ int main()
         if (summary.empty())
             summary.push_back(text("(nothing added yet)") | dim);
 
-        return panel("New blueprint", vbox({
+        return panel("New WorkflowDefinition", vbox({
             hbox({text(" Name: ") | dim, bNameIn->Render() | size(WIDTH, EQUAL, 28),
                   text("  Version: ") | dim, bVerIn->Render() | size(WIDTH, EQUAL, 5)}),
             hbox({text(" Add: ") | dim, kindToggle->Render() | color(Color::Cyan)}),
-            hbox({f1In->Render() | size(WIDTH, EQUAL, 22), text(" "),
-                  f2In->Render() | size(WIDTH, EQUAL, 22), text(" "),
-                  f3In->Render() | size(WIDTH, EQUAL, 10), text(" "),
-                  f4In->Render() | size(WIDTH, EQUAL, 24)}),
-            text(" Parent/department empty = ROOT or standalone. Priority and condition only apply to tasks.") | dim,
+            hbox({f1In->Render() | size(WIDTH, EQUAL, 18), text(" "),
+                  f2In->Render() | size(WIDTH, EQUAL, 18), text(" "),
+                  f3In->Render() | size(WIDTH, EQUAL, 8), text(" "),
+                  f4In->Render() | size(WIDTH, EQUAL, 20), text(" "),
+                  f5In->Render() | size(WIDTH, EQUAL, 18), text(" "),
+                  f6In->Render() | size(WIDTH, EQUAL, 18)}),
+            text(" Parent/department empty = ROOT or standalone. Priority/condition apply to tasks; role/experience apply to employees.") | dim,
             text(" Add departments before their employees, and subprocesses before the tasks inside them.") | dim,
             text(" Every department needs at least one employee.") | dim,
             hbox({addBtn->Render(), text(" "), createBtn->Render(), text(" "), clearBtn->Render()}),
