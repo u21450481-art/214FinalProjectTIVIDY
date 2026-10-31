@@ -66,13 +66,38 @@ static void loadDemos(WorkflowEngine &e)
 
                          {"Close Return", "ROOT", 1, ""}});
 
-    e.assembleBlueprint("Bank_Process_Loan", 1,
-                        {"Credit Underwriting"},
-                        {{"Naledi", "Credit Underwriting"}},
-                        {{"Credit_Assessment", "ROOT"}},
-                        {{"Verify FICA", "ROOT", 1, ""},
-                         {"Credit Bureau Check", "Credit_Assessment", 1, ""},
-                         {"Sign-Off", "Credit_Assessment", 2, "creditStatus=Approved"}});
+    e.assembleBlueprint("Insurance_Claim", 1,
+                        {"Claims Intake", "Assessment", "Supplier Network", "Management", "Finance"},
+                        {{"Thabo", "Claims Intake"},
+                         {"Lerato", "Claims Intake"},
+                         {"Sipho", "Assessment"},
+                         {"Johann", "Supplier Network"},
+                         {"Zanele", "Management"},
+                         {"Naledi", "Finance"}},
+                        {{"Intake", "ROOT"},
+                         {"Assessment", "ROOT"},
+                         {"Resolution", "ROOT"},
+                         {"Repair Route", "Resolution"},
+                         {"WriteOff Route", "Resolution"},
+                         {"Payout Approval", "ROOT"},
+                         {"Settlement", "ROOT"}},
+                        {{"Record the customer's new claim details", "Intake", 1, ""},
+                         {"Check the policy to confirm coverage", "Intake", 1, ""},
+
+                         {"Inspect the damage and estimate costs", "Assessment", 1, ""},
+
+                         // Conditional Branches
+                         {"Assign a repair shop to fix the vehicle", "Repair Route", 1, "claimType=Repair"},
+                         {"Process the vehicle as a total write-off", "WriteOff Route", 1, "claimType=WriteOff"},
+
+                         // Chain of Responsibility
+                         {"Request approval for the final payout", "Payout Approval", 1, ""},
+
+                         // Parallel execution
+                         {"Pay the customer or the repair shop", "Settlement", 1, ""},
+                         {"Notify the customer that the claim is resolved", "Settlement", 1, ""},
+
+                         {"Close the claim file in the system", "ROOT", 1, ""}});
 }
 
 // ============================================================================

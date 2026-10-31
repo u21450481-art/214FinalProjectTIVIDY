@@ -1,107 +1,256 @@
-INSTANCE #1: Retail_Return
+INSTANCE #1: Insurance_Claim
   Status:    Finished
   Strategy:  LeastLoaded
-  Adapter:   none
-  Progress:  12/12 tasks complete
+  Adapter:   claims
+  Progress:  7/9 tasks complete
 
 TASKS
-  Retail_Return_Root  [Complete]
+  Insurance_Claim_Root  [Complete]
     Intake  [Complete]
-      Capture Return Request  [Complete]  -> Lerato
-      Verify Proof of Purchase  [Complete]  -> Lerato
-      Check Return Window and Policy  [Complete]  -> Lerato
-    Inspection  [Complete]
-      Inspect Item  [Complete]  -> Lerato
-      Record Condition  [Complete]  -> Lerato
-    Resolution  [Complete]
-      Restock  [NotStarted]
-        Restock Shelf  [NotStarted]  if itemCondition=Intact  (skipped)
-        Update Inventory  [NotStarted]  if itemCondition=Intact  (skipped)
-      Damage Handling  [Complete]
-        Log Damage Report  [Complete]  -> Lerato  if itemCondition=Damaged
-        Lodge Supplier Claim  [Complete]  -> Lerato  if itemCondition=Damaged
-      Decline Return  [NotStarted]
-        Reject Return  [NotStarted]  if itemCondition=Unacceptable  (skipped)
-        Notify Customer  [NotStarted]  if itemCondition=Unacceptable  (skipped)
-    Refund Approval  [Complete]
-      Approve Refund  [Complete]  -> Lerato
+      Record the customer's new claim details  [Complete]  -> Thabo
+      Check the policy to confirm coverage  [Complete]  -> Thabo
+    Assessment  [Complete]
+      Inspect the damage and estimate costs  [Complete]  -> Thabo
+    Resolution  [NotStarted]
+      Repair Route  [NotStarted]
+        Assign a repair shop to fix the vehicle  [NotStarted]  if claimType=Repair
+      WriteOff Route  [NotStarted]
+        Process the vehicle as a total write-off  [NotStarted]  if claimType=WriteOff
+    Payout Approval  [Complete]
+      Request approval for the final payout  [Complete]  -> Thabo
     Settlement  [Complete]
-      Issue Refund  [Complete]  -> Lerato
-      Update Customer Record  [Complete]  -> Lerato
-      Send Confirmation  [Complete]  -> Lerato
-    Close Return  [Complete]  -> Lerato
+      Pay the customer or the repair shop  [Complete]  -> Thabo
+      Notify the customer that the claim is resolved  [Complete]  -> Thabo
+    Close the claim file in the system  [Complete]  -> Thabo
 
 PAYLOAD
-  itemCondition = Damaged
+  amount = 1500
+  name = Naledi Khumalo
+  source = claims
+  status = pending
 
 COMMAND HISTORY
-  Start 'Retail_Return_Root' (NotStarted -> Complete)
+  Import C-102 [4 steps]
+  Import C-102 [4 steps]
+  Start 'Insurance_Claim_Root' (NotStarted -> Complete)
   Start 'Intake' (NotStarted -> Complete)
-  Assign 'Capture Return Request' to Lerato
-  Start 'Capture Return Request' (NotStarted -> Complete)
-  Set data 'itemCondition' = 'Damaged'
-  Complete 'Capture Return Request' (InProgress -> Complete)
-  Assign 'Verify Proof of Purchase' to Lerato
-  Start 'Verify Proof of Purchase' (NotStarted -> Complete)
-  Complete 'Verify Proof of Purchase' (InProgress -> Complete)
-  Assign 'Check Return Window and Policy' to Lerato
-  Start 'Check Return Window and Policy' (NotStarted -> Complete)
-  Complete 'Check Return Window and Policy' (InProgress -> Complete)
+  Assign 'Record the customer's new claim details' to Thabo
+  Start 'Record the customer's new claim details' (NotStarted -> Complete)
+  Complete 'Record the customer's new claim details' (InProgress -> Complete)
+  Assign 'Check the policy to confirm coverage' to Thabo
+  Start 'Check the policy to confirm coverage' (NotStarted -> Complete)
+  Complete 'Check the policy to confirm coverage' (InProgress -> Complete)
   Complete 'Intake' (InProgress -> Complete)
-  Start 'Inspection' (NotStarted -> Complete)
-  Assign 'Inspect Item' to Lerato
-  Start 'Inspect Item' (NotStarted -> Complete)
-  Complete 'Inspect Item' (InProgress -> Complete)
-  Assign 'Record Condition' to Lerato
-  Start 'Record Condition' (NotStarted -> Complete)
-  Complete 'Record Condition' (InProgress -> Complete)
-  Complete 'Inspection' (InProgress -> Complete)
-  Start 'Resolution' (NotStarted -> Complete)
-  Start 'Damage Handling' (NotStarted -> Complete)
-  Assign 'Log Damage Report' to Lerato
-  Start 'Log Damage Report' (NotStarted -> Complete)
-  Complete 'Log Damage Report' (InProgress -> Complete)
-  Assign 'Lodge Supplier Claim' to Lerato
-  Start 'Lodge Supplier Claim' (NotStarted -> Complete)
-  Complete 'Lodge Supplier Claim' (InProgress -> Complete)
-  Complete 'Damage Handling' (InProgress -> Complete)
-  Complete 'Resolution' (InProgress -> Complete)
-  Start 'Refund Approval' (NotStarted -> Complete)
-  Assign 'Approve Refund' to Lerato
-  Start 'Approve Refund' (NotStarted -> Complete)
-  Complete 'Approve Refund' (InProgress -> Complete)
-  Complete 'Refund Approval' (InProgress -> Complete)
+  Start 'Assessment' (NotStarted -> Complete)
+  Assign 'Inspect the damage and estimate costs' to Thabo
+  Start 'Inspect the damage and estimate costs' (NotStarted -> Complete)
+  Complete 'Inspect the damage and estimate costs' (InProgress -> Complete)
+  Complete 'Assessment' (InProgress -> Complete)
+  Start 'Payout Approval' (NotStarted -> Complete)
+  Assign 'Request approval for the final payout' to Thabo
+  Start 'Request approval for the final payout' (NotStarted -> Complete)
+  Complete 'Request approval for the final payout' (InProgress -> Complete)
+  Complete 'Payout Approval' (InProgress -> Complete)
   Start 'Settlement' (NotStarted -> Complete)
-  Assign 'Issue Refund' to Lerato
-  Start 'Issue Refund' (NotStarted -> Complete)
-  Complete 'Issue Refund' (InProgress -> Complete)
-  Assign 'Update Customer Record' to Lerato
-  Start 'Update Customer Record' (NotStarted -> Complete)
-  Complete 'Update Customer Record' (InProgress -> Complete)
-  Assign 'Send Confirmation' to Lerato
-  Start 'Send Confirmation' (NotStarted -> Complete)
-  Complete 'Send Confirmation' (InProgress -> Complete)
+  Assign 'Pay the customer or the repair shop' to Thabo
+  Start 'Pay the customer or the repair shop' (NotStarted -> Complete)
+  Complete 'Pay the customer or the repair shop' (InProgress -> Complete)
+  Assign 'Notify the customer that the claim is resolved' to Thabo
+  Start 'Notify the customer that the claim is resolved' (NotStarted -> Complete)
+  Complete 'Notify the customer that the claim is resolved' (InProgress -> Complete)
   Complete 'Settlement' (InProgress -> Complete)
-  Assign 'Close Return' to Lerato
-  Start 'Close Return' (NotStarted -> Complete)
-  Complete 'Close Return' (InProgress -> Complete)
-  Complete 'Retail_Return_Root' (InProgress -> Complete)
+  Assign 'Close the claim file in the system' to Thabo
+  Start 'Close the claim file in the system' (NotStarted -> Complete)
+  Complete 'Close the claim file in the system' (InProgress -> Complete)
+  Complete 'Insurance_Claim_Root' (InProgress -> Complete)
+
+INSTANCE #2: Insurance_Claim
+  Status:    Finished
+  Strategy:  MostExperience
+  Adapter:   claims
+  Progress:  8/8 tasks complete
+
+TASKS
+  Insurance_Claim_Root  [Complete]
+    Intake  [Complete]
+      Record the customer's new claim details  [Complete]  -> Thabo
+      Check the policy to confirm coverage  [Complete]  -> Thabo
+    Assessment  [Complete]
+      Inspect the damage and estimate costs  [Complete]  -> Thabo
+    Resolution  [Complete]
+      Repair Route  [Complete]
+        Assign a repair shop to fix the vehicle  [Complete]  -> Thabo  if claimType=Repair
+      WriteOff Route  [NotStarted]
+        Process the vehicle as a total write-off  [NotStarted]  if claimType=WriteOff  (skipped)
+    Payout Approval  [Complete]
+      Request approval for the final payout  [Complete]  -> Thabo
+    Settlement  [Complete]
+      Pay the customer or the repair shop  [Complete]  -> Thabo
+      Notify the customer that the claim is resolved  [Complete]  -> Thabo
+    Close the claim file in the system  [Complete]  -> Thabo
+
+PAYLOAD
+  amount = 1500
+  claimType = Repair
+  name = Naledi Khumalo
+  source = claims
+  status = pending
+
+COMMAND HISTORY
+  Import C-102 [4 steps]
+  Start 'Insurance_Claim_Root' (NotStarted -> Complete)
+  Start 'Intake' (NotStarted -> Complete)
+  Assign 'Record the customer's new claim details' to Thabo
+  Start 'Record the customer's new claim details' (NotStarted -> Complete)
+  Complete 'Record the customer's new claim details' (InProgress -> Complete)
+  Assign 'Check the policy to confirm coverage' to Thabo
+  Start 'Check the policy to confirm coverage' (NotStarted -> Complete)
+  Complete 'Check the policy to confirm coverage' (InProgress -> Complete)
+  Complete 'Intake' (InProgress -> Complete)
+  Start 'Assessment' (NotStarted -> Complete)
+  Assign 'Inspect the damage and estimate costs' to Thabo
+  Start 'Inspect the damage and estimate costs' (NotStarted -> Complete)
+  Complete 'Inspect the damage and estimate costs' (InProgress -> Complete)
+  Complete 'Assessment' (InProgress -> Complete)
+  Start 'Payout Approval' (NotStarted -> Complete)
+  Assign 'Request approval for the final payout' to Thabo
+  Start 'Request approval for the final payout' (NotStarted -> Complete)
+  Set data 'claimType' = 'Repair'
+  Complete 'Request approval for the final payout' (InProgress -> Complete)
+  Complete 'Payout Approval' (InProgress -> Complete)
+  Start 'Resolution' (NotStarted -> Complete)
+  Start 'Repair Route' (NotStarted -> Complete)
+  Assign 'Assign a repair shop to fix the vehicle' to Thabo
+  Start 'Assign a repair shop to fix the vehicle' (NotStarted -> Complete)
+  Complete 'Assign a repair shop to fix the vehicle' (InProgress -> Complete)
+  Complete 'Repair Route' (InProgress -> Complete)
+  Complete 'Resolution' (InProgress -> Complete)
+  Start 'Settlement' (NotStarted -> Complete)
+  Assign 'Pay the customer or the repair shop' to Thabo
+  Start 'Pay the customer or the repair shop' (NotStarted -> Complete)
+  Complete 'Pay the customer or the repair shop' (InProgress -> Complete)
+  Assign 'Notify the customer that the claim is resolved' to Thabo
+  Start 'Notify the customer that the claim is resolved' (NotStarted -> Complete)
+  Complete 'Notify the customer that the claim is resolved' (InProgress -> Complete)
+  Complete 'Settlement' (InProgress -> Complete)
+  Assign 'Close the claim file in the system' to Thabo
+  Start 'Close the claim file in the system' (NotStarted -> Complete)
+  Complete 'Close the claim file in the system' (InProgress -> Complete)
+  Complete 'Insurance_Claim_Root' (InProgress -> Complete)
+
+INSTANCE #3: Insurance_Claim
+  Status:    Finished
+  Strategy:  MostExperience
+  Adapter:   claims
+  Progress:  8/8 tasks complete
+
+TASKS
+  Insurance_Claim_Root  [Complete]
+    Intake  [Complete]
+      Record the customer's new claim details  [Complete]  -> Thabo
+      Check the policy to confirm coverage  [Complete]  -> Thabo
+    Assessment  [Complete]
+      Inspect the damage and estimate costs  [Complete]  -> Thabo
+    Resolution  [Complete]
+      Repair Route  [Complete]
+        Assign a repair shop to fix the vehicle  [Complete]  -> Thabo  if claimType=Repair
+      WriteOff Route  [NotStarted]
+        Process the vehicle as a total write-off  [NotStarted]  if claimType=WriteOff  (skipped)
+    Payout Approval  [Complete]
+      Request approval for the final payout  [Complete]  -> Thabo
+    Settlement  [Complete]
+      Pay the customer or the repair shop  [Complete]  -> Thabo
+      Notify the customer that the claim is resolved  [Complete]  -> Thabo
+    Close the claim file in the system  [Complete]  -> Thabo
+
+PAYLOAD
+  amount = 1500
+  claimType = Repair
+  name = Naledi Khumalo
+  source = claims
+  status = pending
+
+COMMAND HISTORY
+  Import C-102 [4 steps]
+  Set data 'claimType' = 'Repair'
+  Start 'Insurance_Claim_Root' (NotStarted -> Complete)
+  Start 'Intake' (NotStarted -> Complete)
+  Assign 'Record the customer's new claim details' to Thabo
+  Start 'Record the customer's new claim details' (NotStarted -> Complete)
+  Complete 'Record the customer's new claim details' (InProgress -> Complete)
+  Assign 'Check the policy to confirm coverage' to Thabo
+  Start 'Check the policy to confirm coverage' (NotStarted -> Complete)
+  Complete 'Check the policy to confirm coverage' (InProgress -> Complete)
+  Complete 'Intake' (InProgress -> Complete)
+  Start 'Assessment' (NotStarted -> Complete)
+  Assign 'Inspect the damage and estimate costs' to Thabo
+  Start 'Inspect the damage and estimate costs' (NotStarted -> Complete)
+  Complete 'Inspect the damage and estimate costs' (InProgress -> Complete)
+  Complete 'Assessment' (InProgress -> Complete)
+  Start 'Resolution' (NotStarted -> Complete)
+  Start 'Repair Route' (NotStarted -> Complete)
+  Assign 'Assign a repair shop to fix the vehicle' to Thabo
+  Start 'Assign a repair shop to fix the vehicle' (NotStarted -> Complete)
+  Complete 'Assign a repair shop to fix the vehicle' (InProgress -> Complete)
+  Complete 'Repair Route' (InProgress -> Complete)
+  Complete 'Resolution' (InProgress -> Complete)
+  Start 'Payout Approval' (NotStarted -> Complete)
+  Assign 'Request approval for the final payout' to Thabo
+  Start 'Request approval for the final payout' (NotStarted -> Complete)
+  Complete 'Request approval for the final payout' (InProgress -> Complete)
+  Complete 'Payout Approval' (InProgress -> Complete)
+  Start 'Settlement' (NotStarted -> Complete)
+  Assign 'Pay the customer or the repair shop' to Thabo
+  Start 'Pay the customer or the repair shop' (NotStarted -> Complete)
+  Complete 'Pay the customer or the repair shop' (InProgress -> Complete)
+  Assign 'Notify the customer that the claim is resolved' to Thabo
+  Start 'Notify the customer that the claim is resolved' (NotStarted -> Complete)
+  Complete 'Notify the customer that the claim is resolved' (InProgress -> Complete)
+  Complete 'Settlement' (InProgress -> Complete)
+  Assign 'Close the claim file in the system' to Thabo
+  Start 'Close the claim file in the system' (NotStarted -> Complete)
+  Complete 'Close the claim file in the system' (InProgress -> Complete)
+  Complete 'Insurance_Claim_Root' (InProgress -> Complete)
 
 ACTIVITY LOG
   [Facade] Engine started.
   [Builder] Created blueprint 'Retail_Return'.
-  [Builder] Created blueprint 'Bank_Process_Loan'.
-  [Facade] Spawned instance #1 from 'Retail_Return'.
+  [Builder] Created blueprint 'Insurance_Claim'.
+  [Facade] Spawned instance #1 from 'Insurance_Claim'.
+  [Error] Could not import record 'C-193'.
+  [Facade] Imported 'C-102' into instance #1.
+  [Error] Could not complete 'Close the claim file in the system'.
+  [Facade] Imported 'C-102' into instance #1.
   [Facade] Started instance #1.
-  [Facade] Completed 'Capture Return Request'.
-  [Facade] Completed 'Verify Proof of Purchase'.
-  [Facade] Completed 'Check Return Window and Policy'.
-  [Facade] Completed 'Inspect Item'.
-  [Facade] Completed 'Record Condition'.
-  [Facade] Completed 'Log Damage Report'.
-  [Facade] Completed 'Lodge Supplier Claim'.
-  [Facade] Completed 'Approve Refund'.
-  [Facade] Completed 'Issue Refund'.
-  [Facade] Completed 'Update Customer Record'.
-  [Facade] Completed 'Send Confirmation'.
-  [Facade] Completed 'Close Return'.
+  [Facade] Completed 'Record the customer's new claim details'.
+  [Facade] Completed 'Check the policy to confirm coverage'.
+  [Facade] Completed 'Inspect the damage and estimate costs'.
+  [Facade] Completed 'Request approval for the final payout'.
+  [Facade] Rejected 'Pay the customer or the repair shop'.
+  [Error] Could not cancel 'Pay the customer or the repair shop'.
+  [Facade] Completed 'Pay the customer or the repair shop'.
+  [Facade] Cancelled 'Notify the customer that the claim is resolved'.
+  [Facade] Completed 'Notify the customer that the claim is resolved'.
+  [Facade] Completed 'Close the claim file in the system'.
+  [Facade] Spawned instance #2 from 'Insurance_Claim'.
+  [Facade] Imported 'C-102' into instance #2.
+  [Facade] Started instance #2.
+  [Facade] Completed 'Record the customer's new claim details'.
+  [Facade] Completed 'Check the policy to confirm coverage'.
+  [Facade] Completed 'Inspect the damage and estimate costs'.
+  [Facade] Completed 'Request approval for the final payout'.
+  [Facade] Completed 'Assign a repair shop to fix the vehicle'.
+  [Facade] Completed 'Pay the customer or the repair shop'.
+  [Facade] Completed 'Notify the customer that the claim is resolved'.
+  [Facade] Completed 'Close the claim file in the system'.
+  [Facade] Spawned instance #3 from 'Insurance_Claim'.
+  [Facade] Imported 'C-102' into instance #3.
+  [Facade] Started instance #3.
+  [Facade] Completed 'Record the customer's new claim details'.
+  [Facade] Completed 'Check the policy to confirm coverage'.
+  [Facade] Completed 'Inspect the damage and estimate costs'.
+  [Facade] Completed 'Assign a repair shop to fix the vehicle'.
+  [Facade] Completed 'Request approval for the final payout'.
+  [Facade] Completed 'Pay the customer or the repair shop'.
+  [Facade] Completed 'Notify the customer that the claim is resolved'.
+  [Facade] Completed 'Close the claim file in the system'.
