@@ -27,7 +27,8 @@ public:
 
     void reset(const std::string &name, int version = 1) override;
     void addDepartment(const std::string &deptName) override;
-    void addEmployee(const std::string &empName, const std::string &deptName = "") override;
+    void addEmployee(const std::string &empName, const std::string &deptName,
+                     const std::string &role, int experience) override;
     void addSubprocess(const std::string &subName, const std::string &parentName = "") override;
     void addTask(const std::string &taskName, const std::string &parentName = "",
                  int priority = 1, const std::string &branchCondition = "",

@@ -341,6 +341,7 @@ std::vector<TaskRow> WorkflowEngine::getTaskRows(int instanceId) const
             }
         }
     }
+    return rows;
 }
 
 //---------- strategy ----------

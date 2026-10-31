@@ -55,10 +55,10 @@ int main()
 
     // build tree employees
     builder.addDepartment("Customer Service");
-    builder.addEmployee("Lerato (Returns Clerk)", "Customer Service");
+    builder.addEmployee("Lerato (Returns Clerk)", "Customer Service", "Returns Clerk", 8);
     builder.addDepartment("Warehouse & Quality");
-    builder.addEmployee("Sipho (Quality Inspector)", "Warehouse & Quality");
-    builder.addEmployee("Thabo (Store Manager)"); // alone employee
+    builder.addEmployee("Sipho (Quality Inspector)", "Warehouse & Quality", "Quality Inspector", 11);
+    builder.addEmployee("Thabo (Store Manager)", "", "Store Manager", 15); // alone employee
 
     // build task tree
     builder.addTask("Scan Receipt & Log Return Reason", "ROOT", 1);
@@ -92,9 +92,9 @@ int main()
     builder.reset("Bank_Process_Loan", 1);
 
     builder.addDepartment("Credit Underwriting");
-    builder.addEmployee("Naledi (Credit Analyst)", "Credit Underwriting");
+    builder.addEmployee("Naledi (Credit Analyst)", "Credit Underwriting", "Credit Analyst", 7);
     builder.addDepartment("Risk & Compliance");
-    builder.addEmployee("Johann (Risk Officer)", "Risk & Compliance");
+    builder.addEmployee("Johann (Risk Officer)", "Risk & Compliance", "Risk Officer", 10);
 
     builder.addTask("Verify FICA Documents & Income", "ROOT", 1);
     builder.addSubprocess("Credit_Assessment_Phase", "ROOT");

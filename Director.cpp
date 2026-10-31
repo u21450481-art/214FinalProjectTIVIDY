@@ -19,7 +19,7 @@ void Director::construct(const std::string &name, int version,
         for (const auto &d : departments)
             builder->addDepartment(d);
         for (const auto &e : employees)
-            builder->addEmployee(e.name, e.department);
+            builder->addEmployee(e.name, e.department, e.role, e.experience);
         for (const auto &s : subprocesses)
             builder->addSubprocess(s.name, s.parent);
         for (const auto &t : tasks)

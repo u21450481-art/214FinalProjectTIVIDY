@@ -45,11 +45,16 @@ void CustomDefinitionBuilder::addDepartment(const std::string &deptName)
     TLOG("  + [Builder] Department: " << deptName);
 }
 
-void CustomDefinitionBuilder::addEmployee(const std::string &empName, const std::string &deptName)
+void CustomDefinitionBuilder::addEmployee(const std::string &empName, const std::string &deptName,
+                                          const std::string &role, int experience)
 {
     requireBuild();
     if (empName.empty())
         throw std::invalid_argument("Employee name cannot be empty.");
+    if (role.empty())
+        throw std::invalid_argument("Employee role cannot be empty.");
+    if (experience < 0)
+        throw std::invalid_argument("Employee experience cannot be negative.");
 
     Department *dept = nullptr;
     if (!deptName.empty())
@@ -60,12 +65,13 @@ void CustomDefinitionBuilder::addEmployee(const std::string &empName, const std:
         dept = it->second;
     }
 
-    Employee *emp = new Employee(empName, "", 0);
+    Employee *emp = new Employee(empName, role, experience);
     if (dept)
         dept->add(emp);
     else
         definition->addParticipant(emp);
-    TLOG("  + [Builder] Employee: " << empName);
+    TLOG("  + [Builder] Employee: " << empName << " (" << role << ", "
+                                     << experience << " years)");
 }
 
 void CustomDefinitionBuilder::addSubprocess(const std::string &subName, const std::string &parentName)

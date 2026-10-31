@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <exception>
 #include <functional>
 #include <map>
 #include <string>
@@ -21,19 +22,19 @@ static void loadDemos(WorkflowEngine &e)
     e.assembleBlueprint("Retail_Return", 1,
                         {"Customer Service", "Warehouse", "Inventory Control",
                          "Supplier Relations", "Management", "Finance"},
-                        {{"Lerato", "Customer Service"},
-                         {"Tshego", "Customer Service"},
-                         {"Sipho", "Warehouse"},
-                         {"Luthando", "Warehouse"},
-                         {"Zanele", "Inventory Control"},
-                         {"Tatenda", "Inventory Control"},
-                         {"Johann", "Supplier Relations"},
-                         {"Tanaka", "Supplier Relations"},
-                         {"Thabo", "Management"},
-                         {"Moeletsi", "Management"},
-                         {"Naledi", "Finance"},
-                         {"Bowdene", "Finance"},
-                         {"Karabo", "Finance"}},
+                        {{"Lerato", "Customer Service", "Returns Clerk", 8},
+                         {"Tshego", "Customer Service", "Customer Advisor", 3},
+                         {"Sipho", "Warehouse", "Quality Inspector", 11},
+                         {"Luthando", "Warehouse", "Warehouse Associate", 4},
+                         {"Zanele", "Inventory Control", "Inventory Analyst", 7},
+                         {"Tatenda", "Inventory Control", "Stock Controller", 2},
+                         {"Johann", "Supplier Relations", "Supplier Liaison", 12},
+                         {"Tanaka", "Supplier Relations", "Procurement Clerk", 5},
+                         {"Thabo", "Management", "Store Manager", 15},
+                         {"Moeletsi", "Management", "Shift Supervisor", 9},
+                         {"Naledi", "Finance", "Refund Analyst", 10},
+                         {"Bowdene", "Finance", "Accounts Clerk", 1},
+                         {"Karabo", "Finance", "Finance Officer", 6}},
                         {{"Intake", "ROOT"},
                          {"Inspection", "ROOT"},
                          {"Resolution", "ROOT"},
@@ -68,12 +69,12 @@ static void loadDemos(WorkflowEngine &e)
 
     e.assembleBlueprint("Insurance_Claim", 1,
                         {"Claims Intake", "Assessment", "Supplier Network", "Management", "Finance"},
-                        {{"Thabo", "Claims Intake"},
-                         {"Lerato", "Claims Intake"},
-                         {"Sipho", "Assessment"},
-                         {"Johann", "Supplier Network"},
-                         {"Zanele", "Management"},
-                         {"Naledi", "Finance"}},
+                        {{"Thabo", "Claims Intake", "Claims Administrator", 6},
+                         {"Lerato", "Claims Intake", "Intake Officer", 4},
+                         {"Sipho", "Assessment", "Claims Assessor", 12},
+                         {"Johann", "Supplier Network", "Repair Liaison", 8},
+                         {"Zanele", "Management", "Claims Manager", 15},
+                         {"Naledi", "Finance", "Payout Analyst", 9}},
                         {{"Intake", "ROOT"},
                          {"Assessment", "ROOT"},
                          {"Resolution", "ROOT"},
@@ -520,7 +521,7 @@ int main()
 
     // ---------------- Build page ----------------
     std::string bName, bVer = "1";
-    std::string f1, f2, f3 = "1", f4;
+    std::string f1, f2, f3 = "1", f4, f5, f6;
     int kind = 0;
     std::vector<std::string> kinds = {"Department", "Employee", "Subprocess", "Task"};
     std::vector<std::string> bDepts, bSummary;
@@ -535,6 +536,8 @@ int main()
     auto f2In = Input(&f2, "parent / department");
     auto f3In = Input(&f3, "priority");
     auto f4In = Input(&f4, "condition key=value");
+    auto f5In = Input(&f5, "employee role");
+    auto f6In = Input(&f6, "experience (years)");
 
     auto addBtn = makeButton("Add item", Color::Green, [&]
                              {
@@ -546,8 +549,21 @@ int main()
                 bSummary.push_back("Department: " + f1);
                 break;
             case 1:
-                bEmps.push_back({f1, f2});
-                bSummary.push_back("Employee: " + f1 + (f2.empty() ? " (standalone)" : " -> " + f2));
+                if (f5.empty() || f6.empty()) { note("Employees need a role and experience in years.", false); return; }
+                try {
+                    size_t parsed = 0;
+                    int experience = std::stoi(f6, &parsed);
+                    if (parsed != f6.size() || experience < 0) {
+                        note("Experience must be a non-negative whole number of years.", false);
+                        return;
+                    }
+                    bEmps.push_back({f1, f2, f5, experience});
+                    bSummary.push_back("Employee: " + f1 + " (" + f5 + ", " + std::to_string(experience) +
+                                       " years)" + (f2.empty() ? " (standalone)" : " -> " + f2));
+                } catch (const std::exception &) {
+                    note("Experience must be a non-negative whole number of years.", false);
+                    return;
+                }
                 break;
             case 2:
                 bSubs.push_back({f1, parent});
@@ -562,7 +578,8 @@ int main()
             }
         }
         note("Added. Press 'Create WorkflowDefinition' when you are done.", true);
-        f1.clear(); });
+        f1.clear();
+        if (kind == 1) { f5.clear(); f6.clear(); } });
 
     auto clearBuild = [&]
     {
@@ -587,7 +604,7 @@ int main()
     auto buildControls = Container::Vertical({
         Container::Horizontal({bNameIn, bVerIn}),
         kindToggle,
-        Container::Horizontal({f1In, f2In, f3In, f4In}),
+        Container::Horizontal({f1In, f2In, f3In, f4In, f5In, f6In}),
         Container::Horizontal({addBtn, createBtn, clearBtn}),
     });
 
@@ -604,11 +621,13 @@ int main()
             hbox({text(" Name: ") | dim, bNameIn->Render() | size(WIDTH, EQUAL, 28),
                   text("  Version: ") | dim, bVerIn->Render() | size(WIDTH, EQUAL, 5)}),
             hbox({text(" Add: ") | dim, kindToggle->Render() | color(Color::Cyan)}),
-            hbox({f1In->Render() | size(WIDTH, EQUAL, 22), text(" "),
-                  f2In->Render() | size(WIDTH, EQUAL, 22), text(" "),
-                  f3In->Render() | size(WIDTH, EQUAL, 10), text(" "),
-                  f4In->Render() | size(WIDTH, EQUAL, 24)}),
-            text(" Parent/department empty = ROOT or standalone. Priority and condition only apply to tasks.") | dim,
+            hbox({f1In->Render() | size(WIDTH, EQUAL, 18), text(" "),
+                  f2In->Render() | size(WIDTH, EQUAL, 18), text(" "),
+                  f3In->Render() | size(WIDTH, EQUAL, 8), text(" "),
+                  f4In->Render() | size(WIDTH, EQUAL, 20), text(" "),
+                  f5In->Render() | size(WIDTH, EQUAL, 18), text(" "),
+                  f6In->Render() | size(WIDTH, EQUAL, 18)}),
+            text(" Parent/department empty = ROOT or standalone. Priority/condition apply to tasks; role/experience apply to employees.") | dim,
             text(" Add departments before their employees, and subprocesses before the tasks inside them.") | dim,
             text(" Every department needs at least one employee.") | dim,
             hbox({addBtn->Render(), text(" "), createBtn->Render(), text(" "), clearBtn->Render()}),

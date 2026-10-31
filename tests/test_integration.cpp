@@ -90,7 +90,37 @@ int main() {
         delete root;
     }
 
-    SECTION("5. Workload drops when work is finished");
+    SECTION("5. LeastLoaded rotates sequential work after completed tasks");
+    {
+        Employee anna("Anna", "HR", 2), ben("Ben", "HR", 9);
+        Subprocess* root = new Subprocess();
+        Task *a = T("A"), *b = T("B"), *c = T("C"), *d = T("D");
+        root->add(a); root->add(b); root->add(c); root->add(d);
+        EngineMediator m; m.setRoot(root); m.setStrategy(new LeastLoadedStrategy()); m.setCandidates({ &anna, &ben });
+        m.startWorkflow();
+        m.completeTask(a);
+        m.completeTask(b);
+        m.completeTask(c);
+        CHECK("completed tasks are still distributed across both employees",
+              who(a) == "Anna" && who(b) == "Ben" && who(c) == "Anna" && who(d) == "Ben");
+        delete root;
+    }
+
+    SECTION("6. RoleBased rotates when tasks have no specific role");
+    {
+        Employee anna("Anna", "HR", 2), ben("Ben", "HR", 9);
+        Subprocess* root = new Subprocess();
+        Task *a = T("A"), *b = T("B"), *c = T("C");
+        root->add(a); root->add(b); root->add(c);
+        EngineMediator m; m.setRoot(root); m.setStrategy(new RoleBasedStrategy()); m.setCandidates({ &anna, &ben });
+        m.startWorkflow();
+        m.completeTask(a);
+        m.completeTask(b);
+        CHECK("role-compatible sequential work is rotated", who(a) == "Anna" && who(b) == "Ben" && who(c) == "Anna");
+        delete root;
+    }
+
+    SECTION("7. Workload drops when work is finished");
     {
         Employee anna("Anna", "HR", 2);
         Subprocess* root = new Subprocess();
@@ -106,7 +136,7 @@ int main() {
         delete root;
     }
 
-    SECTION("6. Undoing an assignment gives the workload back");
+    SECTION("8. Undoing an assignment gives the workload back");
     {
         Employee anna("Anna", "HR", 2);
         Subprocess* root = new Subprocess();
@@ -119,7 +149,7 @@ int main() {
         delete root;
     }
 
-    SECTION("7. Rejection halts the flow; undo resumes it");
+    SECTION("9. Rejection halts the flow; undo resumes it");
     {
         Employee pat("Pat", "any", 1);
         Subprocess* root = new Subprocess();
@@ -135,7 +165,7 @@ int main() {
         delete root;
     }
 
-    SECTION("8. A Department as the candidate pool");
+    SECTION("10. A Department as the candidate pool");
     {
         Department dept("Support");
         dept.add(new Employee("Xi", "HR", 3)); dept.add(new Employee("Yo", "HR", 4));
@@ -146,7 +176,7 @@ int main() {
         delete root;
     }
 
-    SECTION("9. Groups are never given to a person; no strategy and nobody suitable are safe");
+    SECTION("11. Groups are never given to a person; no strategy and nobody suitable are safe");
     {
         Subprocess* root = new Subprocess(); Task* t = T("Needs legal", "Legal"); root->add(t);
         Employee pat("Pat", "HR", 1);
@@ -161,17 +191,23 @@ int main() {
         delete root2;
     }
 
-    SECTION("10. Facade smoke test: WorkflowDefinition, spawn, run to the end");
+    SECTION("12. Facade smoke test: WorkflowDefinition, spawn, run to the end");
     {
         WorkflowEngine engine;
         bool ok = engine.assembleBlueprint("Retail Return", 1, { "Service" },
-            { { "Lerato", "Service" }, { "Sipho", "Service" } },
+            { { "Lerato", "Service", "Clerk", 2 }, { "Sipho", "Service", "Manager", 9 } },
             { { "Phase", "ROOT" } },
             { { "Scan", "ROOT", 1, "" }, { "Inspect", "Phase", 1, "" }, { "Restock", "Phase", 2, "" } });
         CHECK("WorkflowDefinition assembled", ok);
-        int id = engine.spawnInstance("Retail Return", "LeastLoaded");
+        int id = engine.instantiateInstance("Retail Return", "MostExperience");
         CHECK("instance spawned", id >= 0);
         CHECK("instance starts", engine.startInstance(id) && engine.getInstanceStatus(id) == "Running");
+        std::vector<TaskRow> initialRows = engine.getTaskRows(id);
+        bool assignedToMostExperienced = false;
+        for (const TaskRow &row : initialRows)
+            if (!row.isGroup && row.name == "Inspect" && row.assignee == "Sipho")
+                assignedToMostExperienced = true;
+        CHECK("builder preserves employee experience for MostExperience assignment", assignedToMostExperienced);
         for (int guard = 0; guard < 10 && engine.getInstanceStatus(id) != "Finished"; ++guard) {
             std::vector<TaskRow> rows = engine.getTaskRows(id);
             for (size_t i = 0; i < rows.size(); ++i)
