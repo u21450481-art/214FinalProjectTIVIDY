@@ -10,13 +10,13 @@
 void CustomDefinitionBuilder::requireBuild() const
 {
     if (definition == nullptr)
-        throw std::logic_error("No active blueprint: call reset(name, version) first.");
+        throw std::logic_error("No active WorkflowDefinition: call reset(name, version) first.");
 }
 
 void CustomDefinitionBuilder::reset(const std::string &name, int version)
 {
     if (name.empty())
-        throw std::invalid_argument("Blueprint name cannot be empty.");
+        throw std::invalid_argument("WorkflowDefinition name cannot be empty.");
 
     delete definition; // discard any abandoned build
     definition = nullptr;
@@ -28,7 +28,7 @@ void CustomDefinitionBuilder::reset(const std::string &name, int version)
     definition->setRoot(root);
     subprocessRegistry["ROOT"] = root;
 
-    TLOG("[Builder] Started blueprint '" << name << "' (v" << version << ")");
+    TLOG("[Builder] Started WorkflowDefinition '" << name << "' (v" << version << ")");
 }
 
 void CustomDefinitionBuilder::addDepartment(const std::string &deptName)

@@ -13,7 +13,7 @@
 using namespace ftxui;
 
 // ============================================================================
-// Demo blueprints
+// Demo WorkflowDefinitions
 // ============================================================================
 
 static void loadDemos(WorkflowEngine &e)
@@ -229,7 +229,7 @@ int main()
     int strategySel = 0, adapterSel = 0;
     std::string recordId, key, val;
 
-    std::string status = "Ready. Select a blueprint and press Spawn.";
+    std::string status = "Ready. Select a WorkflowDefinition and press instantiate.";
     bool statusOk = true;
 
     auto refresh = [&]
@@ -260,7 +260,7 @@ int main()
     {
         int id = selectedId();
         if (id < 0)
-            note("Select or spawn an instance first.", false);
+            note("Select or instantiate an instance first.", false);
         return id;
     };
 
@@ -321,12 +321,12 @@ int main()
     auto taskMenu = Menu(&taskLines, &taskSel, taskOpt);
 
     // ---------------- Run page: buttons ----------------
-    auto spawnBtn = makeButton("Spawn", Color::Green, [&]
-                               {
-        if (bpSel < 0 || bpSel >= (int)bpNames.size()) { note("Select a blueprint first.", false); return; }
+    auto instantiateBtn = makeButton("Instantiate", Color::Green, [&]
+                                     {
+        if (bpSel < 0 || bpSel >= (int)bpNames.size()) { note("Select a WorkflowDefinition first.", false); return; }
         if (strategySel < 0 || strategySel >= (int)strategyNames.size()) return;
-        int id = engine.spawnInstance(bpNames[bpSel], strategyNames[strategySel]);
-        done(id > 0, "Spawned instance #" + std::to_string(id) + ".");
+        int id = engine.instantiateInstance(bpNames[bpSel], strategyNames[strategySel]);
+        done(id > 0, "Instantiated instance #" + std::to_string(id) + ".");
         for (int i = 0; i < (int)instIds.size(); ++i)
             if (instIds[i] == id) instSel = i; });
 
@@ -413,7 +413,7 @@ int main()
 
     // Controls rearranged to sit at the top of the interface
     auto runControls = Container::Vertical({
-        Container::Horizontal({spawnBtn, startBtn, completeBtn, rejectBtn, cancelBtn, undoBtn, redoBtn}),
+        Container::Horizontal({instantiateBtn, startBtn, completeBtn, rejectBtn, cancelBtn, undoBtn, redoBtn}),
         Container::Horizontal({strategyToggle, setStrategyBtn, adapterToggle, setAdapterBtn}),
         Container::Horizontal({recordIn, importBtn, keyIn, valIn, payloadBtn}),
         Container::Horizontal({bpMenu, instMenu, taskMenu}),
@@ -445,7 +445,7 @@ int main()
         }
         taskSel = std::max(0, std::min(taskSel, (int)taskLines.size() - 1));
 
-        Element infoLine = text(" Spawn or select an instance.") | dim;
+        Element infoLine = text(" Instantiate or select an instance.") | dim;
         if (id > 0) {
             history = engine.getHistory(id);
             payload = engine.getPayloadMap(id);
@@ -484,7 +484,7 @@ int main()
         return vbox({
             // Control Ribbon
             vbox({
-                buttonRow({spawnBtn, startBtn, completeBtn, rejectBtn, cancelBtn, undoBtn, redoBtn}),
+                buttonRow({instantiateBtn, startBtn, completeBtn, rejectBtn, cancelBtn, undoBtn, redoBtn}),
                 hbox({text(" Strategy: ") | dim, strategyToggle->Render() | color(Color::Cyan),
                       text(" "), setStrategyBtn->Render(),
                       text("   Adapter:  ") | dim, adapterToggle->Render() | color(Color::Cyan),
@@ -501,9 +501,9 @@ int main()
             
             // Main 3-Column Layout
             hbox({
-                // Left Column: Blueprints & Instances
+                // Left Column: WorkflowDefinitions & Instances
                 vbox({
-                    panel("Blueprints", bpMenu->Render() | vscroll_indicator | frame, Color::BlueLight) | size(HEIGHT, EQUAL, 10),
+                    panel("WorkflowDefinitions", bpMenu->Render() | vscroll_indicator | frame, Color::BlueLight) | size(HEIGHT, EQUAL, 10),
                     panel("Instances", instMenu->Render() | vscroll_indicator | frame, Color::Yellow) | flex,
                 }) | size(WIDTH, EQUAL, 35),
                 
@@ -528,7 +528,7 @@ int main()
     std::vector<SubprocessSpec> bSubs;
     std::vector<TaskSpec> bTasks;
 
-    auto bNameIn = Input(&bName, "blueprint name");
+    auto bNameIn = Input(&bName, "WorkflowDefinition name");
     auto bVerIn = Input(&bVer, "1");
     auto kindToggle = Toggle(&kinds, &kind);
     auto f1In = Input(&f1, "name");
@@ -561,7 +561,7 @@ int main()
                 break;
             }
         }
-        note("Added. Press 'Create blueprint' when you are done.", true);
+        note("Added. Press 'Create WorkflowDefinition' when you are done.", true);
         f1.clear(); });
 
     auto clearBuild = [&]
@@ -573,13 +573,13 @@ int main()
         bSummary.clear();
     };
 
-    auto createBtn = makeButton("Create blueprint", Color::Cyan, [&]
+    auto createBtn = makeButton("Create WorkflowDefinition", Color::Cyan, [&]
                                 {
         int ver = 1;
         try { ver = std::stoi(bVer); } catch (...) {}
         bool ok = engine.assembleBlueprint(bName, ver, bDepts, bEmps, bSubs, bTasks);
         if (ok) { clearBuild(); bName.clear(); }
-        done(ok, "Blueprint created. Select it on the Run page and Spawn."); });
+        done(ok, "WorkflowDefinition created. Select it on the Run page and Instantiate."); });
 
     auto clearBtn = makeButton("Clear list", Color::Red, [&]
                                { clearBuild(); note("Cleared.", true); });
@@ -600,7 +600,7 @@ int main()
         if (summary.empty())
             summary.push_back(text("(nothing added yet)") | dim);
 
-        return panel("New blueprint", vbox({
+        return panel("New WorkflowDefinition", vbox({
             hbox({text(" Name: ") | dim, bNameIn->Render() | size(WIDTH, EQUAL, 28),
                   text("  Version: ") | dim, bVerIn->Render() | size(WIDTH, EQUAL, 5)}),
             hbox({text(" Add: ") | dim, kindToggle->Render() | color(Color::Cyan)}),

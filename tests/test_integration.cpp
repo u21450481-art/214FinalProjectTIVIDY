@@ -161,14 +161,14 @@ int main() {
         delete root2;
     }
 
-    SECTION("10. Facade smoke test: blueprint, spawn, run to the end");
+    SECTION("10. Facade smoke test: WorkflowDefinition, spawn, run to the end");
     {
         WorkflowEngine engine;
         bool ok = engine.assembleBlueprint("Retail Return", 1, { "Service" },
             { { "Lerato", "Service" }, { "Sipho", "Service" } },
             { { "Phase", "ROOT" } },
             { { "Scan", "ROOT", 1, "" }, { "Inspect", "Phase", 1, "" }, { "Restock", "Phase", 2, "" } });
-        CHECK("blueprint assembled", ok);
+        CHECK("WorkflowDefinition assembled", ok);
         int id = engine.spawnInstance("Retail Return", "LeastLoaded");
         CHECK("instance spawned", id >= 0);
         CHECK("instance starts", engine.startInstance(id) && engine.getInstanceStatus(id) == "Running");

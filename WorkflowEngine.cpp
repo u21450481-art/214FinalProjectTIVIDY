@@ -179,7 +179,7 @@ std::vector<std::string> WorkflowEngine::getBlueprintNames() const
 
 //---------- instances ----------
 
-int WorkflowEngine::spawnInstance(const std::string &blueprintName, const std::string &strategyName)
+int WorkflowEngine::instantiateInstance(const std::string &blueprintName, const std::string &strategyName)
 {
     auto bp = blueprints.find(blueprintName);
     if (bp == blueprints.end())
@@ -214,7 +214,7 @@ int WorkflowEngine::spawnInstance(const std::string &blueprintName, const std::s
     instances[id] = std::move(inst);
     mediators[id] = std::move(med);
 
-    logEvent("[Facade] Spawned instance #" + std::to_string(id) + " from '" + blueprintName + "'.");
+    logEvent("[Facade] Instantiated instance #" + std::to_string(id) + " from '" + blueprintName + "'.");
     return id;
 }
 

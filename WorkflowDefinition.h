@@ -1,6 +1,6 @@
 /**
  * @file WorkflowDefinition.h
- * @brief Master blueprint assembled by the Builder pattern.
+ * @brief Master WorkflowDefinition assembled by the Builder pattern.
  *
  * ============================================================================
  * DESIGN ROLE & PATTERN PARTICIPATION:
@@ -8,10 +8,10 @@
  * - Secondary Pattern Role: Prototype client (via instantiate())
  * - Role Explanation:
  *   WorkflowDefinition is the complex object (Product) assembled step by step
- *   by a WorkflowDefinitionBuilder. It is a reusable, static blueprint holding
+ *   by a WorkflowDefinitionBuilder. It is a reusable, static definition holding
  *   the root of the task tree, the registered participants and version
  *   metadata. instantiate() clones the task tree into a new, independent
- *   WorkflowInstance, so running a workflow never changes the blueprint.
+ *   WorkflowInstance, so running a workflow never changes the definition.
  * ============================================================================
  */
 
@@ -38,10 +38,10 @@ class Participant;       ///< Composite pattern: Employee/Department tree
 class WorkflowDefinition
 {
 private:
-    /** @brief Version number of this blueprint. */
+    /** @brief Version number of this WorkflowDefinition. */
     int version;
 
-    /** @brief Human-readable blueprint name, e.g. "Retail_Return_Item". */
+    /** @brief Human-readable WorkflowDefinition name, e.g. "Retail_Return_Item". */
     std::string name;
 
     /** @brief Root of the master task tree (owned). */
@@ -52,14 +52,14 @@ private:
 
 public:
     /**
-     * @brief Constructs an empty blueprint.
+     * @brief Constructs an empty WorkflowDefinition.
      * @param defName Name of the workflow definition.
      * @param ver Version number (defaults to 1).
      */
     explicit WorkflowDefinition(const std::string &defName = "Unnamed_Workflow", int ver = 1);
 
     /**
-     * @brief Destroys the blueprint, deleting the task tree and all top-level participants.
+     * @brief Destroys the WorkflowDefinition, deleting the task tree and all top-level participants.
      */
     ~WorkflowDefinition();
 
@@ -70,11 +70,11 @@ public:
     WorkflowDefinition &operator=(const WorkflowDefinition &) = delete;
 
     /**
-     * @brief Spawns a fresh, independent WorkflowInstance from this blueprint.
+     * @brief Spawns a fresh, independent WorkflowInstance from this WorkflowDefinition.
      *
      * Uses the Prototype pattern: the root task tree is cloned with
      * WorkflowComponent::clone(), so changes to the instance never affect
-     * this blueprint or other instances.
+     * this WorkflowDefinition or other instances.
      *
      * @param instanceId Unique ID chosen by the caller (the WorkflowEngine).
      * @return The new instance, which owns its cloned task tree.
@@ -82,13 +82,13 @@ public:
     std::unique_ptr<WorkflowInstance> instantiate(int instanceId);
 
     /**
-     * @brief Gets the blueprint version.
+     * @brief Gets the WorkflowDefinition version.
      * @return The version number.
      */
     int getVersion() const;
 
     /**
-     * @brief Gets the blueprint name.
+     * @brief Gets the WorkflowDefinition name.
      * @return The name (the engine uses it as the registry key).
      */
     const std::string &getName() const;

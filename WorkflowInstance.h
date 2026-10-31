@@ -6,7 +6,7 @@
  * DESIGN ROLE & PATTERN PARTICIPATION:
  * - Role: Active runtime instance, created by WorkflowDefinition::instantiate()
  * - Pattern Connections:
- *   1. Prototype: owns the cloned copy of the blueprint's task tree.
+ *   1. Prototype: owns the cloned copy of the WorkflowDefinition's task tree.
  *   2. Composition: owns a private DataPayload, so concurrent instances
  *      never overwrite each other's data.
  *   3. Mediator context: holds a non-owning pointer to the mediator that
@@ -26,7 +26,7 @@ class WorkflowOrchestrator; ///< Mediator pattern (Mediator interface)
 
 /**
  * @class WorkflowInstance
- * @brief One execution of a blueprint, with its own task tree, data and ID.
+ * @brief One execution of a WorkflowDefinition, with its own task tree, data and ID.
  *
  * Ownership: the instance owns its task tree and payload. It does NOT own
  * the mediator. It cannot be copied.
@@ -40,13 +40,13 @@ private:
     /** @brief Unique ID of this instance. */
     int id;
 
-    /** @brief Name of the blueprint this instance was spawned from. */
+    /** @brief Name of the WorkflowDefinition this instance was spawned from. */
     std::string definitionName;
 
     /** @brief Mediator coordinating this instance (not owned, may be null). */
     WorkflowOrchestrator *mediator;
 
-    /** @brief Version of the blueprint this instance was spawned from. */
+    /** @brief Version of the WorkflowDefinition this instance was spawned from. */
     int definitionVersion;
 
     /** @brief Runtime data unique to this instance. */
@@ -56,8 +56,8 @@ public:
     /**
      * @brief Constructs an instance.
      * @param instanceId Unique ID for this run.
-     * @param defName Name of the source blueprint.
-     * @param defVersion Version of the source blueprint.
+     * @param defName Name of the source WorkflowDefinition.
+     * @param defVersion Version of the source WorkflowDefinition.
      * @param clonedRoot Root of the cloned task tree; the instance takes ownership.
      * @param orchestrator Mediator for this instance (optional, not owned).
      */
@@ -111,14 +111,14 @@ public:
     int getId() const;
 
     /**
-     * @brief Gets the name of the source blueprint.
-     * @return The blueprint name.
+     * @brief Gets the name of the source WorkflowDefinition.
+     * @return The WorkflowDefinition name.
      */
     const std::string &getDefinitionName() const;
 
     /**
-     * @brief Gets the version of the source blueprint.
-     * @return The blueprint version.
+     * @brief Gets the version of the source WorkflowDefinition.
+     * @return The WorkflowDefinition version.
      */
     int getDefinitionVersion() const;
 
