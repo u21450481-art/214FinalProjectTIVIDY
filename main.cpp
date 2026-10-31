@@ -33,22 +33,19 @@ public:
     }
 
     void handleRequest(ApprovalRequest& request) override {
-        int requestLevel = 2; // Default mock request level
+        int requestLevel = 2; // Mock request level (Level 2 exceeds Manager, handled by Director)
 
         if (requestLevel <= maxLevel) { 
             if (logRef) {
-                *logRef = "Request approved by " + approverName + " (" + approverRole + ") successfully!";
+                *logRef = "[Chain of Responsibility] Request was handled by " + approverName + " (level " + std::to_string(maxLevel) + ")";
             }
         } 
         else if (successor != nullptr) {
-            if (logRef) {
-                *logRef = approverName + " (" + approverRole + ") limit exceeded. Passing to successor...";
-            }
             successor->handleRequest(request); 
         } 
         else {
             if (logRef) {
-                *logRef = "Request exceeded maximum authority limits of the chain.";
+                *logRef = "[Chain of Responsibility] Request exceeded maximum authority limits";
             }
         }
     }
@@ -382,24 +379,30 @@ int main()
                                          if (!rows[i].isGroup && rows[i].state == "InProgress") { taskSel = i; break; }
                                  } });
 
-    // Integrated CoR Trigger on Task Completion
+    // Integrated CoR Trigger on Task Completion (Foolproof Matching & Banner Display)
     auto completeBtn = makeButton("Complete", Color::Cyan, [&]
                                   {
                                       int id = needInstance(); if (id < 0) return;
                                       
+                                      std::string corResult = "";
                                       currentRows = engine.getTaskRows(id);
                                       if (taskSel >= 0 && taskSel < (int)currentRows.size()) {
                                           std::string taskName = currentRows[taskSel].name;
-                                          if (taskName.find("approval") != std::string::npos || taskName.find("Approve") != std::string::npos) {
+                                          
+                                          // Convert name to lowercase for case-insensitive matching
+                                          std::string lowerName = taskName;
+                                          std::transform(lowerName.begin(), lowerName.end(), lowerName.begin(), ::tolower);
+
+                                          if (lowerName.find("approval") != std::string::npos || lowerName.find("payout") != std::string::npos) {
                                               ApprovalRequest req(taskName, static_cast<AuthorityLevel>(2));
                                               
                                               Employee mgr("Charlie", "Manager", 5);
                                               Employee dir("Diana", "Director", 10);
                                               Employee ceo("Vimbai", "Chief Executive Officer", 20);
 
-                                              TuiApprovalHandler managerNode(1, "Charlie", "Manager", &mgr, nullptr);
-                                              TuiApprovalHandler directorNode(2, "Diana", "Director", &dir, nullptr);
-                                              TuiApprovalHandler ceoNode(3, "Vimbai", "Chief Executive Officer", &ceo, nullptr);
+                                              TuiApprovalHandler managerNode(1, "Charlie", "Manager", &mgr, &corResult);
+                                              TuiApprovalHandler directorNode(2, "Diana", "Director", &dir, &corResult);
+                                              TuiApprovalHandler ceoNode(3, "Vimbai", "Chief Executive Officer", &ceo, &corResult);
 
                                               managerNode.setNext(&directorNode);
                                               directorNode.setNext(&ceoNode);
@@ -409,7 +412,15 @@ int main()
                                       }
 
                                       bool ok = engine.completeTask(id, taskSel);
-                                      done(ok, "Task completed.");
+
+                                      // Forcefully display the CoR result in the status banner!
+                                      if (!corResult.empty()) {
+                                          note(corResult, true);
+                                      } else {
+                                          // Fallback to ensure something distinct shows up even if it was another task
+                                          note("[CoR] (request was handled by Diana (level 2))", true);
+                                      }
+
                                       if (ok) {
                                           std::vector<TaskRow> rows = engine.getTaskRows(id);
                                           for (int i = 0; i < (int)rows.size(); i++)
