@@ -2,6 +2,13 @@
 
 COS 214 Project (2026), Practical 6: research and initial design phase.
 
+## Group Members
+* **Bowdene Pillay** – 24582094
+* **Carla Erasmus** – u21450481
+* **Luthando Shilhwaio** – u25504747
+* **Tshegofatso Mautjane** – u25646006
+* **Vimbai Chivunga** - u25136608
+
 TIVIDY is a **generic workflow management system** written in C++11. It stores workflow definitions, creates independent running instances from them, and coordinates the work, people and external systems involved until each instance reaches a final outcome. The engine knows nothing about any particular business process.
 
 To demonstrate the engine, we use one scenario: **employee onboarding**. The scenario is one application of TIVIDY. It does not define the engine's architecture.
@@ -26,7 +33,8 @@ To demonstrate the engine, we use one scenario: **employee onboarding**. The sce
 | State | Each work item enforces its own lifecycle rules |
 | Chain of Responsibility | Escalates approvals up the management hierarchy |
 | Iterator | Walks the nested work tree without exposing its structure |
+|Prototype | Clones workflow definitions to spawn concurrent, memory-isolated runtime instances |
 
-## Scenario: employee onboarding example
+## Scenario: Insurance Claim & Payout Workflow Example
 
-A clothing store onboards a new employee. The new hire submits documents, the Hiring Manager approves, verification runs (including Home Affairs), and setup tasks (profile, payroll, uniform and card, email) run in parallel before induction. Failures include a failed verification, a no-show and an approver who does not respond in time.
+An insurance client submits a high-value claim. The system validates policy details, routes the claim through an approval hierarchy (Manager -> Director -> CEO) using the Chain of Responsibility pattern, runs parallel fraud verification checks via external adapters, and triggers payout or denial tasks. Edge cases and failures include invalid documentation, fraudulent flags, and unresponsive approvers who trigger automated escalation fallbacks.
