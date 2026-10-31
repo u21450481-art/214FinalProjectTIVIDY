@@ -17,7 +17,7 @@
 #include "Task.h"
 #include "WorkflowComponent.h"
 #include "WorkflowIterator.h"
-
+#include "ReturnsDataAdapter.h"
 //---------- helpers ----------
 
 AssignmentStrategy *WorkflowEngine::makeStrategy(const std::string &name)
@@ -33,10 +33,12 @@ AssignmentStrategy *WorkflowEngine::makeStrategy(const std::string &name)
 
 DataAdapter *WorkflowEngine::makeAdapter(const std::string &name)
 {
-    if (name == "claims")
+    if (name == "CLAIMS")
         return new ClaimsDataAdapter();
-    if (name == "hr")
+    if (name == "HR")
         return new HrDataAdapter();
+    if (name == "RETURNS")
+        return new ReturnsDataAdapter();
     return nullptr;
 }
 
@@ -181,7 +183,8 @@ std::vector<std::string> WorkflowEngine::getBlueprintNames() const
 
 int WorkflowEngine::instantiateInstance(const std::string &blueprintName, const std::string &strategyName)
 {
-    auto bp = blueprints.find(blueprintName);
+    // just use auto to avoid errors
+    auto bp = blueprints.find(blueprintName); // does this workflowdefinition exist
     if (bp == blueprints.end())
     {
         fail("Blueprint '" + blueprintName + "' not found.");
@@ -199,9 +202,10 @@ int WorkflowEngine::instantiateInstance(const std::string &blueprintName, const 
     int id = nextGlobalInstanceId++;
 
     // prototype: the instance gets its own copy of the task tree
-    std::unique_ptr<WorkflowInstance> inst = def->instantiate(id);
+    std::unique_ptr<WorkflowInstance> inst = def->instantiate(id); //"clone"
 
-    // the mediator owns the strategy and works out who can be assigned tasks
+    // every instance has its own mediator
+    //  the mediator owns the strategy and works out who can be assigned tasks
     std::unique_ptr<EngineMediator> med(new EngineMediator());
 
     med->setRoot(inst->getRoot());
@@ -238,7 +242,7 @@ std::string WorkflowEngine::getInstanceStatus(int instanceId) const
         return "Halted";
     return stateIs(inst->getRoot(), "NotStarted") ? "Not started" : "Running";
 }
-
+/** @brief make the name of the instance */
 std::string WorkflowEngine::getInstanceLabel(int instanceId) const
 {
     WorkflowInstance *inst = findInstance(instanceId);
@@ -259,6 +263,7 @@ bool WorkflowEngine::startInstance(int instanceId)
     if (!stateIs(inst->getRoot(), "NotStarted"))
         return fail("Instance #" + std::to_string(instanceId) + " was already started.");
 
+    // basically hit play
     med->startWorkflow();
     logEvent("[Facade] Started instance #" + std::to_string(instanceId) + ".");
     return true;
@@ -377,7 +382,7 @@ std::string WorkflowEngine::getStrategyName(int instanceId) const
 
 std::vector<std::string> WorkflowEngine::getAdapterNames() const
 {
-    return {"claims", "hr"};
+    return {"CLAIMS", "RETURNS", "HR"};
 }
 
 bool WorkflowEngine::setAdapter(int instanceId, const std::string &adapterName)
