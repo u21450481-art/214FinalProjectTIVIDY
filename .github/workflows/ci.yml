@@ -73,5 +73,4 @@ jobs:
       - name: Analyse the engine sources
         run: |
           cppcheck --std=c++11 --enable=warning,performance --inline-suppr \
-            --suppress=missingIncludeSystem -I. \
-            $(ls *.cpp | grep -v '^main.cpp$')
+            --suppress=missingIncludeSystem -Iinclude src
