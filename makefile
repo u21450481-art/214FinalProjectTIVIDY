@@ -1,100 +1,106 @@
-CXX      = g++
-CXXFLAGS = -std=c++17 -Wall -Wextra -Wno-unused-parameter -g
-LDFLAGS  = -lftxui-component -lftxui-dom -lftxui-screen -lpthread
+# ======================================================================
+# TIVIDY makefile        (run `make help` to list the targets)
+#
+#   app/                 TUI front end (FTXUI)
+#   src/                 engine sources (plain C++11)
+#   include/             all headers
+#   tests/               integration and unit tests (plus older pattern demos)
+#   build/               every compiled file; safe to delete (make clean)
+# ======================================================================
 
-# ---- test build ----
-TARGET = test_builder
-SRCS = main.cpp \
-       WorkflowEngine.cpp \
-       CustomDefinitionBuilder.cpp \
-       WorkflowDefinitionBuilder.cpp \
-       Director.cpp \
-       WorkflowDefinition.cpp \
-       WorkflowInstance.cpp \
-       DataPayload.cpp \
-       WorkflowComponent.cpp \
-       Subprocess.cpp \
-       Task.cpp \
-       Department.cpp \
-       Employee.cpp \
-       Stage.cpp \
-       ConcreteStages.cpp \
-       ConcreteStrategies.cpp \
-       DepthFirstIterator.cpp \
-       CompletedTaskIterator.cpp \
-       EngineMediator.cpp \
-       Command.cpp \
-       CommandHistory.cpp \
-       MacroCommand.cpp \
-       SetDataCommand.cpp \
-       StartCommand.cpp \
-       CompleteCommand.cpp \
-       RejectCommand.cpp \
-       CancelCommand.cpp \
-       AssignTaskCommand.cpp \
-       StateTransitionCommand.cpp \
-       RecordDecisionCommand.cpp \
-       DataAdapter.cpp \
-       ClaimsDataAdapter.cpp \
-       ClaimsSystem.cpp \
-       HrDataAdapter.cpp \
-       LegacyHrSystem.cpp \
-       ReturnsDataAdapter.cpp \
-       ReturnsSystem.cpp \
-       ApprovalRequest.cpp \
-       ManagerHandler.cpp \
-       DirectorHandler.cpp
-OBJS = $(SRCS:.cpp=.o)
+CXX  ?= g++
+WARN := -Wall -Wextra -Wno-unused-parameter
+INC  := -Iinclude
 
-all: $(TARGET)
+SRC_DIR   := src
+APP_DIR   := app
+BUILD_DIR := build
 
-$(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
+ENGINE_SRCS := $(wildcard $(SRC_DIR)/*.cpp)
+APP_SRCS    := $(wildcard $(APP_DIR)/*.cpp)
 
-# -MMD -MP writes a .d file so header changes trigger rebuilds
-%.o: %.cpp
-	$(CXX) $(CXXFLAGS) -MMD -MP -c $< -o $@
+INTEGRATION_TEST := tests/integration_tests/test_integration.cpp
+UNIT_TEST        := tests/mediator_strategy_tests/test_mediator_strategy.cpp
 
-run: all
-	./$(TARGET)
+# ---------------------------------------------------------------- TUI
+# The front end needs C++17 and FTXUI. TIVIDY_TUI silences the engine's
+# console logging so it does not draw over the screen.
+TUI_FLAGS := -std=c++17 $(WARN) -g $(INC) -DTIVIDY_TUI
+TUI_LIBS  := -lftxui-component -lftxui-dom -lftxui-screen -lpthread
+TUI_OBJS  := $(patsubst %.cpp,$(BUILD_DIR)/tui/%.o,$(ENGINE_SRCS) $(APP_SRCS))
 
-valgrind: all
-	valgrind --leak-check=full --show-leak-kinds=all ./$(TARGET)
-
-# ---- TUI build ----
-# Remove ConcreteStrategies.cpp and EngineMediator.cpp from this filter
-# once the new facade (which uses them) is in.
-# ---- TUI build ----
-# Include all source files without any exclusions
-TUI_SRCS = $(SRCS)
-
-TUI_OBJS = $(TUI_SRCS:.cpp=.tui.o)
+all: tividy
 
 tividy: $(TUI_OBJS)
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
+	$(CXX) $(TUI_FLAGS) -o $@ $^ $(TUI_LIBS)
 
-%.tui.o: %.cpp
-	$(CXX) $(CXXFLAGS) -MMD -MP -DTIVIDY_TUI -c $< -o $@
+$(BUILD_DIR)/tui/%.o: %.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(TUI_FLAGS) -MMD -MP -c $< -o $@
 
-tui: tividy
+tui run: tividy
 	./tividy
-# Wildcards, so files that were filtered out earlier are cleaned too
-clean:
-	rm -f *.o *.d $(TARGET) tividy
 
-.PHONY: all run valgrind tui clean
+# -------------------------------------------------------------- tests
+# Engine objects are built once with AddressSanitizer and UBSan and shared
+# by every test program.
+TEST_FLAGS := -std=c++11 $(WARN) -g -fsanitize=address,undefined $(INC)
+SAN_OBJS   := $(patsubst %.cpp,$(BUILD_DIR)/san/%.o,$(ENGINE_SRCS))
 
-# ---- checks added with the Mediator/Strategy integration fixes ----
-# engine sources only (everything except the FTXUI front end)
-ENGINE_SRCS = $(filter-out main.cpp,$(SRCS))
+$(BUILD_DIR)/san/%.o: %.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(TEST_FLAGS) -MMD -MP -c $< -o $@
 
-# integration tests: mediator + strategies driving the real composites (run: make test)
-test: tests/test_integration.cpp $(ENGINE_SRCS)
-	$(CXX) -std=c++11 -Wall -Wextra -Wno-unused-parameter -g -fsanitize=address,undefined -I. -o test_integration $^
-	./test_integration
+$(BUILD_DIR)/bin/test_integration: $(BUILD_DIR)/san/$(INTEGRATION_TEST:.cpp=.o) $(SAN_OBJS)
+	@mkdir -p $(dir $@)
+	$(CXX) $(TEST_FLAGS) -o $@ $^
 
-# proves the engine is plain C++11 (the FTXUI front end needs a newer standard)
+$(BUILD_DIR)/bin/test_mediator_strategy: $(BUILD_DIR)/san/$(UNIT_TEST:.cpp=.o) $(SAN_OBJS)
+	@mkdir -p $(dir $@)
+	$(CXX) $(TEST_FLAGS) -o $@ $^
+
+# integration tests: mediator and strategies driving the real composites
+test: $(BUILD_DIR)/bin/test_integration
+	./$<
+
+# unit tests for the Mediator and the Strategy classes
+unit: $(BUILD_DIR)/bin/test_mediator_strategy
+	./$<
+
+# proves the engine is plain C++11 (only the front end needs C++17)
 check11:
-	@for f in $(ENGINE_SRCS); do $(CXX) -std=c++11 -Wall -Wextra -Wno-unused-parameter -fsyntax-only -I. $$f || exit 1; done; echo "engine compiles as C++11"
+	@for f in $(ENGINE_SRCS); do $(CXX) -std=c++11 $(WARN) -fsyntax-only $(INC) $$f || exit 1; done; echo "engine compiles as C++11"
 
-.PHONY: test check11
+# ----------------------------------------------------------- valgrind
+# Valgrind cannot run next to AddressSanitizer, so this uses its own build.
+VG_FLAGS := -std=c++11 $(WARN) -g -O0 $(INC)
+VG_OBJS  := $(patsubst %.cpp,$(BUILD_DIR)/vg/%.o,$(ENGINE_SRCS) $(INTEGRATION_TEST))
+
+$(BUILD_DIR)/vg/%.o: %.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(VG_FLAGS) -MMD -MP -c $< -o $@
+
+$(BUILD_DIR)/bin/test_integration_vg: $(VG_OBJS)
+	@mkdir -p $(dir $@)
+	$(CXX) $(VG_FLAGS) -o $@ $^
+
+valgrind: $(BUILD_DIR)/bin/test_integration_vg
+	valgrind --leak-check=full --show-leak-kinds=all --error-exitcode=1 ./$<
+
+# -------------------------------------------------------------- misc
+clean:
+	rm -rf $(BUILD_DIR) tividy
+
+help:
+	@echo "make            build the TUI (tividy)"
+	@echo "make tui        build and run the TUI"
+	@echo "make test       integration tests (sanitizers)"
+	@echo "make unit       mediator and strategy unit tests (sanitizers)"
+	@echo "make check11    check the engine compiles as C++11"
+	@echo "make valgrind   integration tests under valgrind"
+	@echo "make clean      delete build output"
+
+DEPS := $(TUI_OBJS:.o=.d) $(SAN_OBJS:.o=.d) $(VG_OBJS:.o=.d)
+-include $(DEPS)
+
+.PHONY: all tui run test unit check11 valgrind clean help

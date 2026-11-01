@@ -1,5 +1,7 @@
-.git 
+.git
+.github
+build/
+tividy
+docs/
 *.o
 *.d
-run_tests
-tui
