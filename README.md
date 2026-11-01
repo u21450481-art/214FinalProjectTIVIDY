@@ -8,13 +8,6 @@
 
 <h1 align="center">TIVIDY — Workflow Management System</h1>
 
-<p align="center">
-  A Generic Workflow Management System built in C++11
-</p>
-
-
-* Final Report: `link`
-
 ## Group Members
 * **Bowdene Pillay** – 24582094
 * **Carla Erasmus** – u21450481
@@ -66,13 +59,12 @@ We then have to select what type of data we're adapting and load it into DataPay
 Once refunded work item is complete
 
 ## Building and testing
-
-Run these from the repo root in Linux or WSL:
-    make            # build the TUI (tividy)
-    make tui        # run the tui(shows it)
-    make unit       # unit tests for the mediator and the strategies
-    make test       # integration tests for every other DP
-    make check11    # engine compiles as plain C++11
+    Run these from the repo root in Linux or WSL:
+        make            # build the TUI (tividy)
+        make tui        # run the tui(shows it)
+        make unit       # unit tests for the mediator and the strategies
+        make test       # integration tests for every other DP
+        make check11    # engine compiles as plain C++11
 
 ## Bonus: Docker and CI
 
