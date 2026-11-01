@@ -1,4 +1,5 @@
 # TIVIDY: Workflow Management System
+![CI](https://github.com/u21450481-art/214FinalProjectTIVIDY/actions/workflows/ci.yml/badge.svg)
 
 COS 214 Project (2026), Practical 6: research and initial design phase.
 
