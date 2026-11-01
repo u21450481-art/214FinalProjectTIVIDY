@@ -57,3 +57,30 @@ An insurance client submits a high-value claim. The system validates policy deta
         make unit       # unit tests for the mediator and the strategies
         make test       # integration tests
         make check11    # engine compiles as plain C++11
+
+## Bonus: Docker and CI
+
+### Docker
+
+The TUI is containerised with a two-stage Dockerfile. The first stage builds FTXUI (pinned to v6.1.9) and compiles the TUI on Ubuntu 24.04, and the second stage copies only the finished program into a clean image.
+
+To run the demo:
+
+```
+docker build -t tividy .
+docker run -t --rm tividy
+```
+
+The first build is slow because it compiles FTXUI from scratch. Use a large terminal window.
+
+### CI pipeline
+
+Every push to `dev` or a `feature/**` branch, and every pull request into `dev`, runs a GitHub Actions pipeline (`.github/workflows/ci.yml`):
+
+| Job | What it does |
+|---|---|
+| `test` | Checks the engine compiles as C++11, then runs the unit and integration tests with AddressSanitizer and UBSan |
+| `docker` | Builds the Docker image and checks the `tividy` program is inside it (runs only if `test` passes) |
+| `static-analysis` | Runs cppcheck and reports advice, without failing the run |
+
+See the **Actions** tab for the latest results. More detail is in `docs/CI.md`.
