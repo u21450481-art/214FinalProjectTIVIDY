@@ -17,34 +17,42 @@
 using namespace ftxui;
 
 // ===============================
-// Concrete Approval Handler 
+// Concrete Approval Handler
 // ===============================
-class TuiApprovalHandler : public ApprovalHandler {
+class TuiApprovalHandler : public ApprovalHandler
+{
 private:
     int maxLevel;
     std::string approverName;
     std::string approverRole;
-    std::string* logRef;
+    std::string *logRef;
 
 public:
-    TuiApprovalHandler(int limit, const std::string& name, const std::string& role, Employee* emp, std::string* log) 
-        : maxLevel(limit), approverName(name), approverRole(role), logRef(log) {
+    TuiApprovalHandler(int limit, const std::string &name, const std::string &role, Employee *emp, std::string *log)
+        : maxLevel(limit), approverName(name), approverRole(role), logRef(log)
+    {
         setApprover(emp); // Links team's Employee (Participant)
     }
 
-    void handleRequest(ApprovalRequest& request) override {
+    void handleRequest(ApprovalRequest &request) override
+    {
         int requestLevel = 2; // Mock request level (Level 2 exceeds Manager, handled by Director)
 
-        if (requestLevel <= maxLevel) { 
-            if (logRef) {
+        if (requestLevel <= maxLevel)
+        {
+            if (logRef)
+            {
                 *logRef = "[Chain of Responsibility] Request was handled by " + approverName + " (level " + std::to_string(maxLevel) + ")";
             }
-        } 
-        else if (successor != nullptr) {
-            successor->handleRequest(request); 
-        } 
-        else {
-            if (logRef) {
+        }
+        else if (successor != nullptr)
+        {
+            successor->handleRequest(request);
+        }
+        else
+        {
+            if (logRef)
+            {
                 *logRef = "[Chain of Responsibility] Request exceeded maximum authority limits";
             }
         }
@@ -57,6 +65,9 @@ public:
 
 static void loadDemos(WorkflowEngine &e)
 {
+    // ========================================================================
+    // 1. RETAIL RETURN (Deepened 4-Level Composite Tree)
+    // ========================================================================
     e.assembleBlueprint("Retail_Return", 1,
                         {"Customer Service", "Warehouse", "Inventory Control",
                          "Supplier Relations", "Management", "Finance"},
@@ -73,21 +84,32 @@ static void loadDemos(WorkflowEngine &e)
                          {"Naledi", "Finance", "Refund Analyst", 10},
                          {"Bowdene", "Finance", "Accounts Clerk", 1},
                          {"Karabo", "Finance", "Finance Officer", 6}},
-                        {{"Intake", "ROOT"},
-                         {"Inspection", "ROOT"},
-                         {"Resolution", "ROOT"},
+                        {// Tier 1: Major Operational Phases (under ROOT)
+                         {"Frontline Operations", "ROOT"},
+                         {"Inventory Routing", "ROOT"},
+                         {"Financial Settlement", "ROOT"},
+
+                         // Tier 2: Sub-Phases
+                         {"Intake", "Frontline Operations"},
+                         {"Inspection", "Frontline Operations"},
+                         {"Resolution", "Inventory Routing"},
+                         {"Refund Approval", "Financial Settlement"},
+                         {"Disbursement", "Financial Settlement"},
+
+                         // Tier 3: Specific Action Branches (under Resolution)
                          {"Restock", "Resolution"},
                          {"Damage Handling", "Resolution"},
-                         {"Decline Return", "Resolution"},
-                         {"Refund Approval", "ROOT"},
-                         {"Settlement", "ROOT"}},
-                        {{"Capture Return Request", "Intake", 1, ""},
+                         {"Decline Return", "Resolution"}},
+                        {// Intake Tasks
+                         {"Capture Return Request", "Intake", 1, ""},
                          {"Verify Proof of Purchase", "Intake", 1, ""},
                          {"Check Return Window and Policy", "Intake", 1, ""},
 
+                         // Inspection Tasks
                          {"Inspect Item", "Inspection", 1, ""},
                          {"Record Condition", "Inspection", 1, ""},
 
+                         // Branching Tasks (Level 4 depth!)
                          {"Restock Shelf", "Restock", 1, "itemCondition=Intact"},
                          {"Update Inventory", "Restock", 1, "itemCondition=Intact"},
 
@@ -97,11 +119,11 @@ static void loadDemos(WorkflowEngine &e)
                          {"Reject Return", "Decline Return", 1, "itemCondition=Unacceptable"},
                          {"Notify Customer", "Decline Return", 1, "itemCondition=Unacceptable"},
 
+                         // Settlement Tasks
                          {"Approve Refund", "Refund Approval", 1, ""},
-
-                         {"Issue Refund", "Settlement", 1, ""},
-                         {"Update Customer Record", "Settlement", 1, ""},
-                         {"Send Confirmation", "Settlement", 1, ""},
+                         {"Issue Refund", "Disbursement", 1, ""},
+                         {"Update Customer Record", "Disbursement", 1, ""},
+                         {"Send Confirmation", "Disbursement", 1, ""},
 
                          {"Close Return", "ROOT", 1, ""}});
 
@@ -262,6 +284,7 @@ int main()
     std::vector<int> instIds;
     std::vector<TaskRow> currentRows;
     int bpSel = 0, instSel = 0, taskSel = 0;
+    bool showCompleted = false; // middle panel shows the completed tasks instead of the task tree
 
     std::vector<std::string> strategyNames = engine.getStrategyNames();
     std::vector<std::string> adapterNames = engine.getAdapterNames();
@@ -425,18 +448,7 @@ int main()
                                           std::vector<TaskRow> rows = engine.getTaskRows(id);
                                           for (int i = 0; i < (int)rows.size(); i++)
                                               if (!rows[i].isGroup && rows[i].state == "InProgress") { taskSel = i; break; }
-                                      } 
-                                  });
-
-    auto rejectBtn = makeButton("Reject", Color::Red, [&]
-                                { int id = needInstance(); if (id < 0) return;
-                                  bool ok = engine.rejectTask(id, taskSel);
-                                  done(ok, "Task rejected.");
-                                  if (ok) {
-                                      std::vector<TaskRow> rows = engine.getTaskRows(id);
-                                      for (int i = 0; i < (int)rows.size(); i++)
-                                          if (!rows[i].isGroup && rows[i].state == "InProgress") { taskSel = i; break; }
-                                  } });
+                                      } });
 
     auto cancelBtn = makeButton("Cancel", Color::Magenta, [&]
                                 { int id = needInstance(); if (id < 0) return;
@@ -468,6 +480,15 @@ int main()
                                         if (!rows[i].isGroup && rows[i].state == "InProgress") { taskSel = i; break; }
                                 } });
 
+    auto completedBtn = makeButton("Show complete tasks", Color::Green, [&]
+                                   { showCompleted = true; });
+    auto backToTasksBtn = makeButton("Back to Tasks", Color::Green, [&]
+                                     { showCompleted = false; });
+    auto completedAction = Maybe(completedBtn, [&]
+                                 { return !showCompleted; });
+    auto backToTasksAction = Maybe(backToTasksBtn, [&]
+                                   { return showCompleted; });
+
     auto strategyToggle = Toggle(&strategyNames, &strategySel);
     auto setStrategyBtn = makeButton("Apply to instance", Color::BlueLight, [&]
                                      { int id = needInstance(); if (id < 0) return;
@@ -491,7 +512,8 @@ int main()
                                    done(engine.setPayloadValue(id, key, val), "Payload updated."); });
 
     auto runControls = Container::Vertical({
-        Container::Horizontal({instantiateBtn, startBtn, completeBtn, rejectBtn, cancelBtn, undoBtn, redoBtn}),
+        Container::Horizontal({instantiateBtn, startBtn, completeBtn, cancelBtn, undoBtn, redoBtn,
+                               completedAction, backToTasksAction}),
         Container::Horizontal({strategyToggle, setStrategyBtn, adapterToggle, setAdapterBtn}),
         Container::Horizontal({recordIn, importBtn, keyIn, valIn, payloadBtn}),
         Container::Horizontal({bpMenu, instMenu, taskMenu}),
@@ -557,9 +579,25 @@ int main()
             historyLines.push_back(h);
         }
 
+        // Middle panel: the task tree, or only the completed tasks (recomputed on every redraw)
+        Element middle;
+        if (showCompleted) {
+            std::vector<std::string> finished = (id > 0) ? engine.getCompletedTasks(id) : std::vector<std::string>{};
+            Elements finishedLines;
+            for (const std::string &n : finished)
+                finishedLines.push_back(text(n) | color(Color::Green));
+            if (finishedLines.empty())
+                finishedLines.push_back(text("(no tasks completed yet)") | dim);
+            middle = panel("Completed tasks (" + std::to_string(finished.size()) + ")",
+                           vbox(std::move(finishedLines)) | vscroll_indicator | frame, Color::Green);
+        } else {
+            middle = panel("Tasks (select a row)", taskMenu->Render() | vscroll_indicator | frame, Color::Green);
+        }
+
         return vbox({
             vbox({
-                buttonRow({instantiateBtn, startBtn, completeBtn, rejectBtn, cancelBtn, undoBtn, redoBtn}),
+                buttonRow({instantiateBtn, startBtn, completeBtn, cancelBtn, undoBtn, redoBtn,
+                           completedAction, backToTasksAction}),
                 hbox({text(" Strategy: ") | dim, strategyToggle->Render() | color(Color::Cyan),
                       text(" "), setStrategyBtn->Render(),
                       text("   Adapter:  ") | dim, adapterToggle->Render() | color(Color::Cyan),
@@ -580,7 +618,7 @@ int main()
                     panel("Instances", instMenu->Render() | vscroll_indicator | frame, Color::Yellow) | flex,
                 }) | size(WIDTH, EQUAL, 35),
                 
-                panel("Tasks (select a row)", taskMenu->Render() | vscroll_indicator | frame, Color::Green) | flex,
+                middle | flex,
                 
                 vbox({
                     panel("Payload", vbox(std::move(payloadLines)) | vscroll_indicator | frame, Color::Magenta) | size(HEIGHT, EQUAL, 10),

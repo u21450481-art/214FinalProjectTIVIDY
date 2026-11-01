@@ -18,6 +18,8 @@
 #include "WorkflowComponent.h"
 #include "WorkflowIterator.h"
 #include "ReturnsDataAdapter.h"
+#include "CompletedTaskIterator.h"
+
 //---------- helpers ----------
 
 AssignmentStrategy *WorkflowEngine::makeStrategy(const std::string &name)
@@ -347,6 +349,27 @@ std::vector<TaskRow> WorkflowEngine::getTaskRows(int instanceId) const
         }
     }
     return rows;
+}
+
+std::vector<std::string> WorkflowEngine::getCompletedTasks(int instanceId) const
+{
+    std::vector<std::string> lines;
+    WorkflowInstance *inst = findInstance(instanceId);
+    if (!inst || !inst->getRoot())
+        return lines;
+
+    // second concrete iterator: only visits tasks that are Complete
+    CompletedTaskIterator it(inst->getRoot());
+    for (it.first(); !it.isDone(); it.next())
+    {
+        WorkflowComponent *c = it.currentItem();
+        std::string line = c->getName();
+        Task *t = dynamic_cast<Task *>(c);
+        if (t && t->getAssignee())
+            line += "  -> " + t->getAssignee()->getName();
+        lines.push_back(line);
+    }
+    return lines;
 }
 
 //---------- strategy ----------

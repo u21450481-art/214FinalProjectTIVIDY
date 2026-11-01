@@ -21,6 +21,7 @@ SRCS = main.cpp \
        ConcreteStages.cpp \
        ConcreteStrategies.cpp \
        DepthFirstIterator.cpp \
+       CompletedTaskIterator.cpp \
        EngineMediator.cpp \
        Command.cpp \
        CommandHistory.cpp \
@@ -65,45 +66,7 @@ valgrind: all
 # once the new facade (which uses them) is in.
 # ---- TUI build ----
 # Include all source files without any exclusions
-TUI_SRCS = main.cpp \
-       WorkflowEngine.cpp \
-       CustomDefinitionBuilder.cpp \
-       WorkflowDefinitionBuilder.cpp \
-       Director.cpp \
-       WorkflowDefinition.cpp \
-       WorkflowInstance.cpp \
-       DataPayload.cpp \
-       WorkflowComponent.cpp \
-       Subprocess.cpp \
-       Task.cpp \
-       Department.cpp \
-       Employee.cpp \
-       Stage.cpp \
-       ConcreteStages.cpp \
-       ConcreteStrategies.cpp \
-       DepthFirstIterator.cpp \
-       EngineMediator.cpp \
-       Command.cpp \
-       CommandHistory.cpp \
-       MacroCommand.cpp \
-       SetDataCommand.cpp \
-       StartCommand.cpp \
-       CompleteCommand.cpp \
-       RejectCommand.cpp \
-       CancelCommand.cpp \
-       AssignTaskCommand.cpp \
-       StateTransitionCommand.cpp \
-       RecordDecisionCommand.cpp \
-       DataAdapter.cpp \
-       ClaimsDataAdapter.cpp \
-       ClaimsSystem.cpp \
-       HrDataAdapter.cpp \
-       LegacyHrSystem.cpp \
-       ReturnsDataAdapter.cpp \
-       ReturnsSystem.cpp \
-       ApprovalRequest.cpp \
-       ManagerHandler.cpp \
-       DirectorHandler.cpp
+TUI_SRCS = $(SRCS)
 
 TUI_OBJS = $(TUI_SRCS:.cpp=.tui.o)
 

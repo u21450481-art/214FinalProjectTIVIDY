@@ -99,6 +99,8 @@ public:
     bool rejectTask(int instanceId, int taskIndex);
     bool cancelTask(int instanceId, int taskIndex);
     std::vector<TaskRow> getTaskRows(int instanceId) const;
+    // names of the tasks that are Complete (uses the CompletedTaskIterator)
+    std::vector<std::string> getCompletedTasks(int instanceId) const;
 
     std::vector<std::string> getStrategyNames() const;
     bool setStrategy(int instanceId, const std::string &strategyName);
