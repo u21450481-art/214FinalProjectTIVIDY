@@ -1,113 +1,39 @@
 INSTANCE #1: Retail_Return
-  Status:    Finished
+  Status:    Halted
+  Halted at: Send Confirmation
   Strategy:  RoleBased
   Adapter:   RETURNS
-  Progress:  10/16 tasks complete
+  Progress:  10/12 tasks complete
 
 TASKS
-  Retail_Return_Root  [Complete]
-    Intake  [Complete]
-      Capture Return Request  [Complete]  -> Lerato
-      Verify Proof of Purchase  [Complete]  -> Tshego
-      Check Return Window and Policy  [Complete]  -> Sipho
-    Inspection  [Complete]
-      Inspect Item  [Complete]  -> Luthando
-      Record Condition  [Complete]  -> Zanele
-    Resolution  [NotStarted]
-      Restock  [NotStarted]
-        Restock Shelf  [NotStarted]  if itemCondition=Intact
-        Update Inventory  [NotStarted]  if itemCondition=Intact
-      Damage Handling  [NotStarted]
-        Log Damage Report  [NotStarted]  if itemCondition=Damaged
-        Lodge Supplier Claim  [NotStarted]  if itemCondition=Damaged
-      Decline Return  [NotStarted]
-        Reject Return  [NotStarted]  if itemCondition=Unacceptable
-        Notify Customer  [NotStarted]  if itemCondition=Unacceptable
-    Refund Approval  [Complete]
-      Approve Refund  [Complete]  -> Tatenda
-    Settlement  [Complete]
-      Issue Refund  [Complete]  -> Johann
-      Update Customer Record  [Complete]  -> Tanaka
-      Send Confirmation  [Complete]  -> Thabo
-    Close Return  [Complete]  -> Moeletsi
-
-PAYLOAD
-  (empty)
-
-COMMAND HISTORY
-  Start 'Retail_Return_Root' (NotStarted -> Complete)
-  Start 'Intake' (NotStarted -> Complete)
-  Assign 'Capture Return Request' to Lerato
-  Start 'Capture Return Request' (NotStarted -> Complete)
-  Complete 'Capture Return Request' (InProgress -> Complete)
-  Assign 'Verify Proof of Purchase' to Tshego
-  Start 'Verify Proof of Purchase' (NotStarted -> Complete)
-  Complete 'Verify Proof of Purchase' (InProgress -> Complete)
-  Assign 'Check Return Window and Policy' to Sipho
-  Start 'Check Return Window and Policy' (NotStarted -> Complete)
-  Complete 'Check Return Window and Policy' (InProgress -> Complete)
-  Complete 'Intake' (InProgress -> Complete)
-  Start 'Inspection' (NotStarted -> Complete)
-  Assign 'Inspect Item' to Luthando
-  Start 'Inspect Item' (NotStarted -> Complete)
-  Complete 'Inspect Item' (InProgress -> Complete)
-  Assign 'Record Condition' to Zanele
-  Start 'Record Condition' (NotStarted -> Complete)
-  Complete 'Record Condition' (InProgress -> Complete)
-  Complete 'Inspection' (InProgress -> Complete)
-  Start 'Refund Approval' (NotStarted -> Complete)
-  Assign 'Approve Refund' to Tatenda
-  Start 'Approve Refund' (NotStarted -> Complete)
-  Complete 'Approve Refund' (InProgress -> Complete)
-  Complete 'Refund Approval' (InProgress -> Complete)
-  Start 'Settlement' (NotStarted -> Complete)
-  Assign 'Issue Refund' to Johann
-  Start 'Issue Refund' (NotStarted -> Complete)
-  Complete 'Issue Refund' (InProgress -> Complete)
-  Assign 'Update Customer Record' to Tanaka
-  Start 'Update Customer Record' (NotStarted -> Complete)
-  Complete 'Update Customer Record' (InProgress -> Complete)
-  Assign 'Send Confirmation' to Thabo
-  Start 'Send Confirmation' (NotStarted -> Complete)
-  Complete 'Send Confirmation' (InProgress -> Complete)
-  Complete 'Settlement' (InProgress -> Complete)
-  Assign 'Close Return' to Moeletsi
-  Start 'Close Return' (NotStarted -> Complete)
-  Complete 'Close Return' (InProgress -> Complete)
-  Complete 'Retail_Return_Root' (InProgress -> Complete)
-
-INSTANCE #2: Retail_Return
-  Status:    Finished
-  Strategy:  RoleBased
-  Adapter:   RETURNS
-  Progress:  12/12 tasks complete
-
-TASKS
-  Retail_Return_Root  [Complete]
-    Intake  [Complete]
-      Capture Return Request  [Complete]  -> Lerato
-      Verify Proof of Purchase  [Complete]  -> Tshego
-      Check Return Window and Policy  [Complete]  -> Sipho
-    Inspection  [Complete]
-      Inspect Item  [Complete]  -> Luthando
-      Record Condition  [Complete]  -> Zanele
-    Resolution  [Complete]
-      Restock  [Complete]
-        Restock Shelf  [Complete]  -> Tatenda  if itemCondition=Intact
-        Update Inventory  [Complete]  -> Johann  if itemCondition=Intact
-      Damage Handling  [NotStarted]
-        Log Damage Report  [NotStarted]  if itemCondition=Damaged  (skipped)
-        Lodge Supplier Claim  [NotStarted]  if itemCondition=Damaged  (skipped)
-      Decline Return  [NotStarted]
-        Reject Return  [NotStarted]  if itemCondition=Unacceptable  (skipped)
-        Notify Customer  [NotStarted]  if itemCondition=Unacceptable  (skipped)
-    Refund Approval  [Complete]
-      Approve Refund  [Complete]  -> Tanaka
-    Settlement  [Complete]
-      Issue Refund  [Complete]  -> Thabo
-      Update Customer Record  [Complete]  -> Moeletsi
-      Send Confirmation  [Complete]  -> Naledi
-    Close Return  [Complete]  -> Bowdene
+  Retail_Return_Root  [InProgress]
+    Frontline Operations  [Complete]
+      Intake  [Complete]
+        Capture Return Request  [Complete]  -> Lerato
+        Verify Proof of Purchase  [Complete]  -> Tshego
+        Check Return Window and Policy  [Complete]  -> Sipho
+      Inspection  [Complete]
+        Inspect Item  [Complete]  -> Luthando
+        Record Condition  [Complete]  -> Zanele
+    Inventory Routing  [Complete]
+      Resolution  [Complete]
+        Restock  [Complete]
+          Restock Shelf  [Complete]  -> Tatenda  if itemCondition=Intact
+          Update Inventory  [Complete]  -> Johann  if itemCondition=Intact
+        Damage Handling  [NotStarted]
+          Log Damage Report  [NotStarted]  if itemCondition=Damaged  (skipped)
+          Lodge Supplier Claim  [NotStarted]  if itemCondition=Damaged  (skipped)
+        Decline Return  [NotStarted]
+          Reject Return  [NotStarted]  if itemCondition=Unacceptable  (skipped)
+          Notify Customer  [NotStarted]  if itemCondition=Unacceptable  (skipped)
+    Financial Settlement  [InProgress]
+      Refund Approval  [Complete]
+        Approve Refund  [Complete]  -> Tanaka
+      Disbursement  [InProgress]
+        Issue Refund  [Complete]  -> Thabo
+        Update Customer Record  [Complete]  -> Moeletsi
+        Send Confirmation  [Cancelled]  -> Naledi
+    Close Return  [NotStarted]
 
 PAYLOAD
   amount = 450
@@ -118,8 +44,8 @@ PAYLOAD
 
 COMMAND HISTORY
   Import R-100 [4 steps]
-  Set data 'itemCondition' = 'Intact'
-  Start 'Retail_Return_Root' (NotStarted -> Complete)
+  Start 'Retail_Return_Root' (NotStarted -> InProgress)
+  Start 'Frontline Operations' (NotStarted -> Complete)
   Start 'Intake' (NotStarted -> Complete)
   Assign 'Capture Return Request' to Lerato
   Start 'Capture Return Request' (NotStarted -> Complete)
@@ -137,8 +63,11 @@ COMMAND HISTORY
   Complete 'Inspect Item' (InProgress -> Complete)
   Assign 'Record Condition' to Zanele
   Start 'Record Condition' (NotStarted -> Complete)
+  Set data 'itemCondition' = 'Intact'
   Complete 'Record Condition' (InProgress -> Complete)
   Complete 'Inspection' (InProgress -> Complete)
+  Complete 'Frontline Operations' (InProgress -> Complete)
+  Start 'Inventory Routing' (NotStarted -> Complete)
   Start 'Resolution' (NotStarted -> Complete)
   Start 'Restock' (NotStarted -> Complete)
   Assign 'Restock Shelf' to Tatenda
@@ -149,12 +78,14 @@ COMMAND HISTORY
   Complete 'Update Inventory' (InProgress -> Complete)
   Complete 'Restock' (InProgress -> Complete)
   Complete 'Resolution' (InProgress -> Complete)
+  Complete 'Inventory Routing' (InProgress -> Complete)
+  Start 'Financial Settlement' (NotStarted -> InProgress)
   Start 'Refund Approval' (NotStarted -> Complete)
   Assign 'Approve Refund' to Tanaka
   Start 'Approve Refund' (NotStarted -> Complete)
   Complete 'Approve Refund' (InProgress -> Complete)
   Complete 'Refund Approval' (InProgress -> Complete)
-  Start 'Settlement' (NotStarted -> Complete)
+  Start 'Disbursement' (NotStarted -> InProgress)
   Assign 'Issue Refund' to Thabo
   Start 'Issue Refund' (NotStarted -> Complete)
   Complete 'Issue Refund' (InProgress -> Complete)
@@ -162,36 +93,86 @@ COMMAND HISTORY
   Start 'Update Customer Record' (NotStarted -> Complete)
   Complete 'Update Customer Record' (InProgress -> Complete)
   Assign 'Send Confirmation' to Naledi
-  Start 'Send Confirmation' (NotStarted -> Complete)
-  Complete 'Send Confirmation' (InProgress -> Complete)
+  Start 'Send Confirmation' (NotStarted -> Cancelled)
+  Cancel 'Send Confirmation' (InProgress -> Cancelled)
+
+INSTANCE #2: Insurance_Claim
+  Status:    Finished
+  Strategy:  LeastLoaded
+  Adapter:   CLAIMS
+  Progress:  8/8 tasks complete
+
+TASKS
+  Insurance_Claim_Root  [Complete]
+    Intake  [Complete]
+      Record the customer's new claim details  [Complete]  -> Thabo
+      Check the policy to confirm coverage  [Complete]  -> Lerato
+    Assessment  [Complete]
+      Inspect the damage and estimate costs  [Complete]  -> Sipho
+    Resolution  [Complete]
+      Repair Route  [NotStarted]
+        Assign a repair shop to fix the vehicle  [NotStarted]  if claimType=Repair  (skipped)
+      WriteOff Route  [Complete]
+        Process the vehicle as a total write-off  [Complete]  -> Johann  if claimType=WriteOff
+    Payout Approval  [Complete]
+      Request approval for the final payout  [Complete]  -> Zanele
+    Settlement  [Complete]
+      Pay the customer or the repair shop  [Complete]  -> Naledi
+      Notify the customer that the claim is resolved  [Complete]  -> Thabo
+    Close the claim file in the system  [Complete]  -> Lerato
+
+PAYLOAD
+  claimType = WriteOff
+
+COMMAND HISTORY
+  Start 'Insurance_Claim_Root' (NotStarted -> Complete)
+  Start 'Intake' (NotStarted -> Complete)
+  Assign 'Record the customer's new claim details' to Thabo
+  Start 'Record the customer's new claim details' (NotStarted -> Complete)
+  Complete 'Record the customer's new claim details' (InProgress -> Complete)
+  Assign 'Check the policy to confirm coverage' to Lerato
+  Start 'Check the policy to confirm coverage' (NotStarted -> Complete)
+  Complete 'Check the policy to confirm coverage' (InProgress -> Complete)
+  Complete 'Intake' (InProgress -> Complete)
+  Start 'Assessment' (NotStarted -> Complete)
+  Assign 'Inspect the damage and estimate costs' to Sipho
+  Start 'Inspect the damage and estimate costs' (NotStarted -> Complete)
+  Set data 'claimType' = 'WriteOff'
+  Complete 'Inspect the damage and estimate costs' (InProgress -> Complete)
+  Complete 'Assessment' (InProgress -> Complete)
+  Start 'Resolution' (NotStarted -> Complete)
+  Start 'WriteOff Route' (NotStarted -> Complete)
+  Assign 'Process the vehicle as a total write-off' to Johann
+  Start 'Process the vehicle as a total write-off' (NotStarted -> Complete)
+  Complete 'Process the vehicle as a total write-off' (InProgress -> Complete)
+  Complete 'WriteOff Route' (InProgress -> Complete)
+  Complete 'Resolution' (InProgress -> Complete)
+  Start 'Payout Approval' (NotStarted -> Complete)
+  Assign 'Request approval for the final payout' to Zanele
+  Start 'Request approval for the final payout' (NotStarted -> Complete)
+  Complete 'Request approval for the final payout' (InProgress -> Complete)
+  Complete 'Payout Approval' (InProgress -> Complete)
+  Start 'Settlement' (NotStarted -> Complete)
+  Assign 'Pay the customer or the repair shop' to Naledi
+  Start 'Pay the customer or the repair shop' (NotStarted -> Complete)
+  Complete 'Pay the customer or the repair shop' (InProgress -> Complete)
+  Assign 'Notify the customer that the claim is resolved' to Thabo
+  Start 'Notify the customer that the claim is resolved' (NotStarted -> Complete)
+  Complete 'Notify the customer that the claim is resolved' (InProgress -> Complete)
   Complete 'Settlement' (InProgress -> Complete)
-  Assign 'Close Return' to Bowdene
-  Start 'Close Return' (NotStarted -> Complete)
-  Complete 'Close Return' (InProgress -> Complete)
-  Complete 'Retail_Return_Root' (InProgress -> Complete)
+  Assign 'Close the claim file in the system' to Lerato
+  Start 'Close the claim file in the system' (NotStarted -> Complete)
+  Complete 'Close the claim file in the system' (InProgress -> Complete)
+  Complete 'Insurance_Claim_Root' (InProgress -> Complete)
 
 ACTIVITY LOG
   [Facade] Engine started.
   [Builder] Created blueprint 'Retail_Return'.
   [Builder] Created blueprint 'Insurance_Claim'.
   [Facade] Instantiated instance #1 from 'Retail_Return'.
-  [Error] Could not import record 'C-102'.
-  [Error] Could not import record 'C-102'.
-  [Error] Could not import record 'C-102'.
+  [Error] Could not import record 'C-100'.
+  [Facade] Imported 'R-100' into instance #1.
   [Facade] Started instance #1.
-  [Facade] Completed 'Capture Return Request'.
-  [Facade] Completed 'Verify Proof of Purchase'.
-  [Facade] Completed 'Check Return Window and Policy'.
-  [Facade] Completed 'Inspect Item'.
-  [Facade] Completed 'Record Condition'.
-  [Facade] Completed 'Approve Refund'.
-  [Facade] Completed 'Issue Refund'.
-  [Facade] Completed 'Update Customer Record'.
-  [Facade] Completed 'Send Confirmation'.
-  [Facade] Completed 'Close Return'.
-  [Facade] Instantiated instance #2 from 'Retail_Return'.
-  [Facade] Imported 'R-100' into instance #2.
-  [Facade] Started instance #2.
   [Facade] Completed 'Capture Return Request'.
   [Facade] Completed 'Verify Proof of Purchase'.
   [Facade] Completed 'Check Return Window and Policy'.
@@ -202,6 +183,18 @@ ACTIVITY LOG
   [Facade] Completed 'Approve Refund'.
   [Facade] Completed 'Issue Refund'.
   [Facade] Completed 'Update Customer Record'.
-  [Facade] Completed 'Send Confirmation'.
-  [Facade] Completed 'Close Return'.
-  [Error] Could not complete 'Close Return'.
+  [Facade] Cancelled 'Send Confirmation'.
+  [Facade] Instantiated instance #2 from 'Insurance_Claim'.
+  [Error] Could not import record 'C-100'.
+  [Error] Could not import record 'C-100'.
+  [Error] Could not import record 'C-101'.
+  [Facade] Started instance #2.
+  [Facade] Completed 'Record the customer's new claim details'.
+  [Facade] Completed 'Check the policy to confirm coverage'.
+  [Facade] Completed 'Inspect the damage and estimate costs'.
+  [Facade] Completed 'Process the vehicle as a total write-off'.
+  [Facade] Completed 'Request approval for the final payout'.
+  [Facade] Completed 'Pay the customer or the repair shop'.
+  [Facade] Completed 'Notify the customer that the claim is resolved'.
+  [Facade] Completed 'Close the claim file in the system'.
+  [Facade] Report saved to 'tividy_report.txt'.
