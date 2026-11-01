@@ -98,3 +98,10 @@ check11:
 	@for f in $(ENGINE_SRCS); do $(CXX) -std=c++11 -Wall -Wextra -Wno-unused-parameter -fsyntax-only -I. $$f || exit 1; done; echo "engine compiles as C++11"
 
 .PHONY: test check11
+
+# unit tests for the Mediator and the Strategy classes (run: make unit)
+unit: tests/mediator_strategy_tests/test_mediator_strategy.cpp $(ENGINE_SRCS)
+	$(CXX) -std=c++11 -Wall -Wextra -Wno-unused-parameter -g -fsanitize=address,undefined -I. -o test_mediator_strategy $^
+	./test_mediator_strategy
+
+.PHONY: unit
