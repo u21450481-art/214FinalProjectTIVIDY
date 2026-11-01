@@ -38,3 +38,15 @@ To demonstrate the engine, we use one scenario: **employee onboarding**. The sce
 ## Scenario: Insurance Claim & Payout Workflow Example
 
 An insurance client submits a high-value claim. The system validates policy details, routes the claim through an approval hierarchy (Manager -> Director -> CEO) using the Chain of Responsibility pattern, runs parallel fraud verification checks via external adapters, and triggers payout or denial tasks. Edge cases and failures include invalid documentation, fraudulent flags, and unresponsive approvers who trigger automated escalation fallbacks.
+
+## Testing
+
+    Run these from the repo root in Linux or WSL:
+
+        make unit      # unit tests for the mediator and the strategies
+        make test      # integration tests
+        make check11   # engine compiles as plain C++11
+
+    The two test targets are built with AddressSanitizer and UBSan.
+
+Optional check in WSL or Linux: `make unit` should end with `90/90 checks passed`.
