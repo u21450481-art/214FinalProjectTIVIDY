@@ -436,13 +436,9 @@ int main()
 
                                       bool ok = engine.completeTask(id, taskSel);
 
-                                      // Forcefully display the CoR result in the status banner!
-                                      if (!corResult.empty()) {
+                                      done(ok, "Task completed.");
+                                      if (ok && !corResult.empty())
                                           note(corResult, true);
-                                      } else {
-                                          // Fallback to ensure something distinct shows up even if it was another task
-                                          note("[CoR] (request was handled by Diana (level 2))", true);
-                                      }
 
                                       if (ok) {
                                           std::vector<TaskRow> rows = engine.getTaskRows(id);
