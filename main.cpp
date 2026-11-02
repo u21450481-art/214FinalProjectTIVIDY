@@ -2,10 +2,10 @@
  * @file main.cpp
  * @brief Terminal User Interface (TUI) for the TIVIDY Workflow Management System.
  * @details Implements an interactive dashboard using the FTXUI library, supporting
- *          workflow execution, blueprint building, reporting, and Chain of Responsibility integration.
+ *          workflow execution, blueprint building and reporting.
  */
 
- #include <algorithm>
+#include <algorithm>
 #include <exception>
 #include <functional>
 #include <map>
@@ -17,45 +17,8 @@
 #include <ftxui/dom/elements.hpp>
 
 #include "WorkflowEngine.h"
-#include "Employee.h"
-#include "ApprovalHandler.h"
-#include "ApprovalRequest.h"
 
 using namespace ftxui;
-
-// Concrete Approval Handler 
-
-class TuiApprovalHandler : public ApprovalHandler {
-private:
-    int maxLevel;
-    std::string approverName;
-    std::string approverRole;
-    std::string* logRef;
-
-public:
-    TuiApprovalHandler(int limit, const std::string& name, const std::string& role, Employee* emp, std::string* log) 
-        : maxLevel(limit), approverName(name), approverRole(role), logRef(log) {
-        setApprover(emp); // Links team's Employee (Participant)
-    }
-
-    void handleRequest(ApprovalRequest& request) override {
-        int requestLevel = 2; // Mock request level (Level 2 exceeds Manager, handled by Director)
-
-        if (requestLevel <= maxLevel) { 
-            if (logRef) {
-                *logRef = "[Chain of Responsibility] Request was handled by " + approverName + " (level " + std::to_string(maxLevel) + ")";
-            }
-        } 
-        else if (successor != nullptr) {
-            successor->handleRequest(request); 
-        } 
-        else {
-            if (logRef) {
-                *logRef = "[Chain of Responsibility] Request exceeded maximum authority limits";
-            }
-        }
-    }
-};
 
 // ============================================================================
 // Demo WorkflowDefinitions
@@ -141,7 +104,6 @@ static void loadDemos(WorkflowEngine &e)
                          {"Assign a repair shop to fix the vehicle", "Repair Route", 1, "claimType=Repair"},
                          {"Process the vehicle as a total write-off", "WriteOff Route", 1, "claimType=WriteOff"},
 
-                         // Chain of Responsibility Task
                          {"Request approval for the final payout", "Payout Approval", 1, ""},
 
                          // Parallel execution
@@ -274,6 +236,7 @@ int main()
     std::vector<int> instIds;
     std::vector<TaskRow> currentRows;
     int bpSel = 0, instSel = 0, taskSel = 0;
+    bool showCompleted = false; // middle panel shows only the completed tasks instead of the task tree
 
     std::vector<std::string> strategyNames = engine.getStrategyNames();
     std::vector<std::string> adapterNames = engine.getAdapterNames();
@@ -391,63 +354,15 @@ int main()
                                          if (!rows[i].isGroup && rows[i].state == "InProgress") { taskSel = i; break; }
                                  } });
 
-    // Integrated CoR Trigger on Task Completion with robust checks
     auto completeBtn = makeButton("Complete", Color::Cyan, [&]
-                                  {
-                                      int id = needInstance(); if (id < 0) return;
-                                      
-                                      std::string corResult = "";
-                                      currentRows = engine.getTaskRows(id);
-                                      if (taskSel >= 0 && taskSel < (int)currentRows.size()) {
-                                          std::string taskName = currentRows[taskSel].name;
-                                          
-                                          // Convert name to lowercase for case-insensitive matching
-                                          std::string lowerName = taskName;
-                                          std::transform(lowerName.begin(), lowerName.end(), lowerName.begin(), ::tolower);
-
-                                          if (lowerName.find("approval") != std::string::npos || lowerName.find("payout") != std::string::npos) {
-                                              ApprovalRequest req(taskName, static_cast<AuthorityLevel>(2));
-                                              
-                                              Employee mgr("Charlie", "Manager", 5);
-                                              Employee dir("Diana", "Director", 10);
-                                              Employee ceo("Vimbai", "Chief Executive Officer", 20);
-
-                                              TuiApprovalHandler managerNode(1, "Charlie", "Manager", &mgr, &corResult);
-                                              TuiApprovalHandler directorNode(2, "Diana", "Director", &dir, &corResult);
-                                              TuiApprovalHandler ceoNode(3, "Vimbai", "Chief Executive Officer", &ceo, &corResult);
-
-                                              managerNode.setNext(&directorNode);
-                                              directorNode.setNext(&ceoNode);
-
-                                              managerNode.handleRequest(req);
-                                          }
-                                      }
-
-                                      bool ok = engine.completeTask(id, taskSel);
-
-                                      // Forcefully display the CoR result or feedback in the status banner!
-                                      if (!corResult.empty()) {
-                                          note(corResult, true);
-                                      } else {
-                                          done(ok, "Task completed.");
-                                      }
-
-                                      if (ok) {
-                                          std::vector<TaskRow> rows = engine.getTaskRows(id);
-                                          for (int i = 0; i < (int)rows.size(); i++)
-                                              if (!rows[i].isGroup && rows[i].state == "InProgress") { taskSel = i; break; }
-                                      } 
-                                  });
-
-    auto rejectBtn = makeButton("Reject", Color::Red, [&]
-                                { int id = needInstance(); if (id < 0) return;
-                                  bool ok = engine.rejectTask(id, taskSel);
-                                  done(ok, "Task rejected.");
-                                  if (ok) {
-                                      std::vector<TaskRow> rows = engine.getTaskRows(id);
-                                      for (int i = 0; i < (int)rows.size(); i++)
-                                          if (!rows[i].isGroup && rows[i].state == "InProgress") { taskSel = i; break; }
-                                  } });
+                                  { int id = needInstance(); if (id < 0) return;
+                                    bool ok = engine.completeTask(id, taskSel);
+                                    done(ok, "Task completed.");
+                                    if (ok) {
+                                        std::vector<TaskRow> rows = engine.getTaskRows(id);
+                                        for (int i = 0; i < (int)rows.size(); i++)
+                                            if (!rows[i].isGroup && rows[i].state == "InProgress") { taskSel = i; break; }
+                                    } });
 
     auto cancelBtn = makeButton("Cancel", Color::Magenta, [&]
                                 { int id = needInstance(); if (id < 0) return;
@@ -479,6 +394,10 @@ int main()
                                         if (!rows[i].isGroup && rows[i].state == "InProgress") { taskSel = i; break; }
                                 } });
 
+    // flips the middle panel between the task tree and only the completed tasks (CompletedTaskIterator)
+    auto completedBtn = makeButton("Show complete tasks", Color::Green, [&]
+                                   { showCompleted = !showCompleted; });
+
     auto strategyToggle = Toggle(&strategyNames, &strategySel);
     auto setStrategyBtn = makeButton("Apply to instance", Color::BlueLight, [&]
                                      { int id = needInstance(); if (id < 0) return;
@@ -502,7 +421,7 @@ int main()
                                    done(engine.setPayloadValue(id, key, val), "Payload updated."); });
 
     auto runControls = Container::Vertical({
-        Container::Horizontal({instantiateBtn, startBtn, completeBtn, rejectBtn, cancelBtn, undoBtn, redoBtn}),
+        Container::Horizontal({instantiateBtn, startBtn, completeBtn, cancelBtn, undoBtn, redoBtn, completedBtn}),
         Container::Horizontal({strategyToggle, setStrategyBtn, adapterToggle, setAdapterBtn}),
         Container::Horizontal({recordIn, importBtn, keyIn, valIn, payloadBtn}),
         Container::Horizontal({bpMenu, instMenu, taskMenu}),
@@ -568,9 +487,24 @@ int main()
             historyLines.push_back(h);
         }
 
+        // middle panel: the task tree, or only the completed tasks (worked out again on every redraw)
+        Element middle;
+        if (showCompleted) {
+            std::vector<std::string> finished = (id > 0) ? engine.getCompletedTasks(id) : std::vector<std::string>{};
+            Elements finishedLines;
+            for (const std::string &n : finished)
+                finishedLines.push_back(text(n) | color(Color::Green));
+            if (finishedLines.empty())
+                finishedLines.push_back(text("(no tasks completed yet)") | dim);
+            middle = panel("Completed tasks (" + std::to_string(finished.size()) + ")",
+                           vbox(std::move(finishedLines)) | vscroll_indicator | frame, Color::Green);
+        } else {
+            middle = panel("Tasks (select a row)", taskMenu->Render() | vscroll_indicator | frame, Color::Green);
+        }
+
         return vbox({
             vbox({
-                buttonRow({instantiateBtn, startBtn, completeBtn, rejectBtn, cancelBtn, undoBtn, redoBtn}),
+                buttonRow({instantiateBtn, startBtn, completeBtn, cancelBtn, undoBtn, redoBtn, completedBtn}),
                 hbox({text(" Strategy: ") | dim, strategyToggle->Render() | color(Color::Cyan),
                       text(" "), setStrategyBtn->Render(),
                       text("   Adapter:  ") | dim, adapterToggle->Render() | color(Color::Magenta),
@@ -591,7 +525,7 @@ int main()
                     panel("Instances", instMenu->Render() | vscroll_indicator | frame, Color::Yellow) | flex,
                 }) | size(WIDTH, EQUAL, 35),
                 
-                panel("Tasks (select a row)", taskMenu->Render() | vscroll_indicator | frame, Color::Green) | flex,
+                middle | flex,
                 
                 vbox({
                     panel("Payload", vbox(std::move(payloadLines)) | vscroll_indicator | frame, Color::Magenta) | size(HEIGHT, EQUAL, 10),
