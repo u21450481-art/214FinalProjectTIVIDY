@@ -39,3 +39,9 @@ latex/
 # Visual Paradigm Diagram Files
 *.lck
 *.bak*
+test_integration
+# Build output
+/tividy
+*.d
+tividy_report.txt
+test_mediator_strategy
