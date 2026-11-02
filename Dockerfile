@@ -26,4 +26,4 @@ CMD ["./tividy"]
 
 # How to run:
 # docker build -t tividy .
-# docker run -t --rm tividy
+# docker run -it --rm --init -e TERM=xterm-256color -e COLORTERM=truecolor tividy
